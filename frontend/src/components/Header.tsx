@@ -12,7 +12,8 @@ export default function Header() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
-      fetch("http://localhost:8000/api/user/me", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      fetch(`${apiUrl}/api/user/me`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -57,6 +58,7 @@ export default function Header() {
         
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-300">
           <a href="/" className="hover:text-white transition-colors">Courses</a>
+          <a href="/recommend" className="hover:text-white transition-colors">Recommend</a>
           <a href="/dashboard" className="hover:text-white transition-colors">Dashboard</a>
         </nav>
 

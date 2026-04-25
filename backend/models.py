@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 class UserCreate(BaseModel):
     first_name: str
@@ -16,7 +16,7 @@ class UserInDB(BaseModel):
     hashed_password: str
     completed_courses: List[str] = []
     preferences: dict = {"target_credits": 16, "max_workload": 4.5}
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class UserResponse(BaseModel):
     id: str
@@ -32,3 +32,18 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     email: Optional[str] = None
+
+class RecommendRequest(BaseModel):
+    query: str
+    k: int = 5
+    subject: Optional[str] = None
+
+class RecommendedCourse(BaseModel):
+    course_code: str
+    subject_prefix: str
+    title: str
+    description: str
+    score: float
+
+class RecommendResponse(BaseModel):
+    results: List[RecommendedCourse]
