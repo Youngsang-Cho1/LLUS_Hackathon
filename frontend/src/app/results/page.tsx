@@ -28,7 +28,7 @@ interface SchedCourse {
 
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
-const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22];
 
 // --- LOGIC ---
 
@@ -291,8 +291,8 @@ function ResultsContent() {
               {schedule.map(course => {
                 return course.timeSlot.days.map((day, idx) => {
                   const dayIndex = DAYS.indexOf(day);
-                  const startPercent = ((course.timeSlot.startHour - 8) / (18 - 8)) * 100;
-                  const heightPercent = (course.timeSlot.duration / (18 - 8)) * 100;
+                  const startPercent = ((course.timeSlot.startHour - 8) / (22 - 8)) * 100;
+                  const heightPercent = (course.timeSlot.duration / (22 - 8)) * 100;
                   const isSelected = selectedCourseId === course.id;
                   const hasConflict = checkTimeConflict(course, schedule, course.id);
 
