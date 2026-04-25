@@ -234,7 +234,7 @@ export default function RegisterPage() {
                 Upload Your Transcript
               </h2>
               <p className="text-gray-400 max-w-lg mx-auto text-sm md:text-base">
-                Drag and drop your unofficial transcript (PDF or Image). Our AI will instantly parse your course history and set up your prerequisite profile.
+                Drag and drop your unofficial transcript (PDF or Image). Our system will instantly parse your course history and set up your prerequisite profile.
               </p>
             </div>
 
@@ -274,7 +274,7 @@ export default function RegisterPage() {
                 <div className="flex flex-col items-center py-6">
                   <div className="w-14 h-14 border-4 border-[var(--color-glass-border)] border-t-[var(--color-nyu-violet-light)] rounded-full animate-spin mb-6"></div>
                   <h3 className="text-lg font-bold text-white mb-2">Extracting Course Data...</h3>
-                  <p className="text-sm text-[var(--color-nyu-violet-light)]">Using Vision AI to parse your transcript</p>
+                  <p className="text-sm text-[var(--color-nyu-violet-light)]">Parsing your transcript...</p>
                 </div>
               )}
 

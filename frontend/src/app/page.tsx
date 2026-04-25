@@ -66,7 +66,7 @@ function LandingPage() {
         </h1>
         
         <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-          Upload your transcript and let our AI engine instantly map out your prerequisites. Generate the perfect, conflict-free schedule in seconds.
+          Upload your transcript and let our engine instantly map out your prerequisites. Generate the perfect, conflict-free schedule in seconds.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -88,7 +88,7 @@ function LandingPage() {
           </div>
           <h3 className="text-xl font-bold text-white mb-3">Transcript Parsing</h3>
           <p className="text-sm text-gray-400 leading-relaxed">
-            Drag and drop your unofficial transcript. Our Vision AI automatically extracts completed courses and clears prerequisites for you.
+            Drag and drop your unofficial transcript. Our system automatically extracts completed courses and clears prerequisites for you.
           </p>
         </div>
 
@@ -96,7 +96,7 @@ function LandingPage() {
           <div className="bg-[var(--color-nyu-violet)]/20 w-12 h-12 rounded-xl flex items-center justify-center mb-6">
             <Cpu size={24} className="text-[var(--color-nyu-violet-light)]" />
           </div>
-          <h3 className="text-xl font-bold text-white mb-3">AI Engine</h3>
+          <h3 className="text-xl font-bold text-white mb-3">Smart Engine</h3>
           <p className="text-sm text-gray-400 leading-relaxed">
             Specify your desired major, target credits, and must-have classes. We'll cross-reference Albert to build a conflict-free semester.
           </p>
@@ -219,13 +219,13 @@ function ScheduleGenerator() {
     <div className="flex flex-col items-center justify-center min-h-[80vh] w-full animate-in fade-in duration-500 mt-10">
       <div className="text-center mb-12">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-nyu-violet-dark)] text-[var(--color-nyu-violet-light)] text-sm font-semibold mb-6 border border-[var(--color-nyu-violet)]">
-          <Sparkles size={14} /> AI-Powered Semantic Search
+          <Sparkles size={14} /> Semantic Course Search
         </div>
         <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
           Craft Your Perfect Semester
         </h1>
         <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-          Tell us what you want to learn, and our AI will recommend the best courses based on cosine similarity and fit them into a conflict-free schedule.
+          Tell us what you want to learn, and our system will recommend the best courses based on semantic similarity and fit them into a conflict-free schedule.
         </p>
       </div>
 
@@ -344,7 +344,7 @@ function ScheduleGenerator() {
               <Sparkles size={14} /> Describe Your Interests
             </label>
             <p className="text-sm text-gray-400 mb-4">
-              Not sure what to take? Just type what you want to learn (e.g., "I want to learn python, data analysis, and AI"). Our model will find the best matches.
+              Not sure what to take? Just type what you want to learn (e.g., "I want to learn python, data analysis, and finance"). Our model will find the best matches.
             </p>
             
             <div className="flex flex-col gap-3">
