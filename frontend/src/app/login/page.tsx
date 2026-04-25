@@ -105,16 +105,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="mt-6 flex items-center justify-between text-sm text-gray-500">
-          <span className="w-1/3 border-b border-[var(--color-glass-border)]"></span>
-          <span className="text-xs uppercase tracking-wider">or</span>
-          <span className="w-1/3 border-b border-[var(--color-glass-border)]"></span>
-        </div>
 
-        <button className="w-full mt-6 flex items-center justify-center gap-3 bg-[var(--color-dark-bg)] border border-[var(--color-glass-border)] py-3 rounded-lg text-sm font-medium text-gray-300 hover:bg-[var(--color-glass)] transition-colors">
-          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className="css-i6dzq1"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
-          Continue with GitHub
-        </button>
 
         <p className="text-center text-sm text-gray-400 mt-8">
           Don't have an account? <a href="/register" className="text-[var(--color-nyu-violet-light)] font-bold hover:underline">Sign up</a>
