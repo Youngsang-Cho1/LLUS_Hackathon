@@ -38,7 +38,9 @@ async def lifespan(app: FastAPI):
             with open(courses_csv, mode='r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    courses_db[row['course_code']] = row
+                    if row['course_code'] not in courses_db:
+                        courses_db[row['course_code']] = []
+                    courses_db[row['course_code']].append(row)
             print(f"[startup] Loaded {len(courses_db)} courses from CSV.")
     except Exception as e:
         print(f"[startup] Failed to load courses CSV: {e}")
@@ -362,22 +364,23 @@ def parse_schedule(schedule_str: str):
 async def generate_schedule(req: ScheduleRequest):
     results = []
     for code in req.course_codes:
-        course_data = app.state.courses_db.get(code)
-        if course_data:
-            time_slot = parse_schedule(course_data.get("schedule", ""))
-            try:
-                c_credits = int(float(course_data.get("credits", 4)))
-            except:
-                c_credits = 4
-                
-            results.append({
-                "code": code,
-                "section": course_data.get("section", "001"),
-                "title": course_data.get("course_name", code) or code,
-                "description": "", 
-                "timeSlot": time_slot,
-                "credits": c_credits
-            })
+        course_sections = app.state.courses_db.get(code, [])
+        if course_sections:
+            for course_data in course_sections:
+                time_slot = parse_schedule(course_data.get("schedule", ""))
+                try:
+                    c_credits = int(float(course_data.get("credits", 4)))
+                except:
+                    c_credits = 4
+                    
+                results.append({
+                    "code": code,
+                    "section": course_data.get("section", "001"),
+                    "title": course_data.get("course_name", code) or code,
+                    "description": "", 
+                    "timeSlot": time_slot,
+                    "credits": c_credits
+                })
         else:
             results.append({
                 "code": code,

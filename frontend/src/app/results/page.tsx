@@ -184,21 +184,42 @@ function ResultsContent() {
                   "bg-teal-900 border-teal-500",
                   "bg-blue-900 border-blue-500"
                 ];
-                const mapped: SchedCourse[] = data.courses.map((c: any, i: number) => ({
-                    id: `gen_${i}`,
-                    slotKey: `slot_${i}`,
-                    code: c.code,
-                    section: c.section,
-                    title: c.title,
-                    credits: c.credits,
-                    timeSlot: c.timeSlot,
-                    color: colors[i % colors.length],
-                    isWanted: true
-                }));
-                setSchedule(mapped);
+
+                const groupedByCode: Record<string, any[]> = {};
+                data.courses.forEach((c: any) => {
+                    if (!groupedByCode[c.code]) groupedByCode[c.code] = [];
+                    groupedByCode[c.code].push(c);
+                });
                 
+                const initialSchedule: SchedCourse[] = [];
                 const newCatalog: Record<string, SchedCourse[]> = {};
-                mapped.forEach(c => { newCatalog[c.slotKey] = [c]; });
+                
+                let courseIdx = 0;
+                for (const code in groupedByCode) {
+                    const sections = groupedByCode[code];
+                    const color = colors[courseIdx % colors.length];
+                    const slotKey = `slot_${code.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                    
+                    const mappedSections: SchedCourse[] = sections.map((c: any, secIdx: number) => ({
+                        id: `gen_${courseIdx}_${secIdx}`,
+                        slotKey: slotKey,
+                        code: c.code,
+                        section: c.section,
+                        title: c.title,
+                        credits: c.credits,
+                        timeSlot: c.timeSlot,
+                        color: color,
+                        isWanted: true
+                    }));
+                    
+                    if (mappedSections.length > 0) {
+                        initialSchedule.push(mappedSections[0]);
+                    }
+                    newCatalog[slotKey] = mappedSections;
+                    courseIdx++;
+                }
+                
+                setSchedule(initialSchedule);
                 setCatalog(newCatalog);
             }
         } catch (e) {
