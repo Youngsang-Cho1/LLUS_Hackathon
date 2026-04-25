@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkles, CalendarDays, Search, X, ArrowRight, UploadCloud, Cpu, GraduationCap } from "lucide-react";
+import { Sparkles, CalendarDays, Search, X, ArrowRight, UploadCloud, Cpu, GraduationCap, ChevronDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState, useEffect } from "react";
 
@@ -13,24 +13,131 @@ const COURSE_DICTIONARY = [
 ];
 
 const MAJOR_DICTIONARY = [
+  "Africana Studies",
+  "American Studies",
+  "Anthropology",
+  "Art History",
+  "Asian/Pacific/American Studies",
+  "Biochemistry",
+  "Biology",
+  "Chemistry",
+  "Cinema Studies",
+  "Classics",
+  "Comparative Literature",
   "Computer Science",
-  "Data Science",
   "Computer Science and Data Science",
   "Computer Science and Mathematics",
-  "Biology",
-  "Business",
+  "Data Science",
+  "Data Science and Mathematics",
+  "Dramatic Literature",
+  "East Asian Studies",
   "Economics",
+  "Economics and Computer Science",
+  "Economics and Mathematics",
+  "Engineering",
+  "English",
+  "Environmental Studies",
+  "European and Mediterranean Studies",
+  "French",
+  "Gender and Sexuality Studies",
+  "German",
+  "Global Public Health",
+  "Hebrew and Judaic Studies",
+  "History",
+  "Iberian Studies",
+  "International Relations",
+  "Italian",
+  "Journalism",
+  "Language and Mind",
+  "Latin American and Caribbean Studies",
+  "Latino Studies",
+  "Linguistics",
   "Mathematics",
-  "Physics"
+  "Mathematics and Physics",
+  "Metropolitan Studies",
+  "Middle Eastern and Islamic Studies",
+  "Music",
+  "Neural Science",
+  "Philosophy",
+  "Physics",
+  "Politics",
+  "Psychology",
+  "Public Policy",
+  "Religion",
+  "Romance Languages",
+  "Russian and Slavic Studies",
+  "Social and Cultural Analysis",
+  "Sociology",
+  "Spanish",
+  "Urban Design and Architecture Studies"
 ];
 
 const MINOR_DICTIONARY = [
-  "Web Programming and Applications",
-  "Business Studies",
+  "Africana Studies",
+  "American Studies",
+  "Anthropology",
+  "Art History",
+  "Asian/Pacific/American Studies",
+  "Biochemistry",
+  "Biology",
+  "Chemistry",
+  "Cinema Studies",
+  "Classics",
+  "Comparative Literature",
+  "Computer Science",
+  "Computer Science and Data Science",
+  "Computer Science and Mathematics",
+  "Data Science",
+  "Data Science and Mathematics",
+  "Dramatic Literature",
+  "East Asian Studies",
+  "Economics",
+  "Economics and Computer Science",
+  "Economics and Mathematics",
+  "Engineering",
+  "English",
+  "Environmental Studies",
+  "European and Mediterranean Studies",
+  "French",
+  "Gender and Sexuality Studies",
+  "German",
+  "Global Public Health",
+  "Hebrew and Judaic Studies",
+  "History",
+  "Iberian Studies",
+  "International Relations",
+  "Italian",
+  "Journalism",
+  "Language and Mind",
+  "Latin American and Caribbean Studies",
+  "Latino Studies",
+  "Linguistics",
   "Mathematics",
+  "Mathematics and Physics",
+  "Metropolitan Studies",
+  "Middle Eastern and Islamic Studies",
+  "Music",
+  "Neural Science",
+  "Philosophy",
+  "Physics",
+  "Politics",
   "Psychology",
+  "Public Policy",
+  "Religion",
+  "Romance Languages",
+  "Russian and Slavic Studies",
+  "Social and Cultural Analysis",
+  "Sociology",
+  "Spanish",
+  "Urban Design and Architecture Studies",
+  "Astronomy",
+  "Business Studies",
+  "Child and Adolescent Mental Health Studies",
+  "Creative Writing",
+  "Game Design",
+  "Producing",
   "Studio Art",
-  "Data Science"
+  "Web Programming and Applications"
 ];
 
 // --- 1. LANDING PAGE COMPONENT (Unauthenticated) ---
@@ -301,40 +408,56 @@ function ScheduleGenerator() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-2 relative">
               <label className="text-xs font-semibold text-gray-400 tracking-wider uppercase">Academic Year</label>
-              <select 
-                value={academicYear}
-                onChange={(e) => setAcademicYear(e.target.value)}
-                className="bg-[var(--color-dark-card)] border border-[var(--color-glass-border)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-nyu-violet)] appearance-none cursor-pointer"
-              >
-                <option value="Fall 2024">Fall 2024</option>
-                <option value="Spring 2025">Spring 2025</option>
-              </select>
+              <div className="relative">
+                <select 
+                  value={academicYear}
+                  onChange={(e) => setAcademicYear(e.target.value)}
+                  className="w-full bg-[var(--color-dark-card)] border border-[var(--color-glass-border)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-nyu-violet)] appearance-none cursor-pointer"
+                >
+                  <option value="Fall 2024">Fall 2024</option>
+                  <option value="Spring 2025">Spring 2025</option>
+                  <option value="Fall 2025">Fall 2025</option>
+                </select>
+                <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
             </div>
 
-            <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-2 relative">
               <label className="text-xs font-semibold text-gray-400 tracking-wider uppercase">Graduation</label>
-              <select 
-                value={graduation}
-                onChange={(e) => setGraduation(e.target.value)}
-                className="bg-[var(--color-dark-card)] border border-[var(--color-glass-border)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-nyu-violet)] appearance-none cursor-pointer"
-              >
-                <option value="Spring 2026">Spring 2026</option>
-                <option value="Spring 2027">Spring 2027</option>
-              </select>
+              <div className="relative">
+                <select 
+                  value={graduation}
+                  onChange={(e) => setGraduation(e.target.value)}
+                  className="w-full bg-[var(--color-dark-card)] border border-[var(--color-glass-border)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-nyu-violet)] appearance-none cursor-pointer"
+                >
+                  <option value="Spring 2025">Spring 2025</option>
+                  <option value="Fall 2025">Fall 2025</option>
+                  <option value="Spring 2026">Spring 2026</option>
+                  <option value="Fall 2026">Fall 2026</option>
+                  <option value="Spring 2027">Spring 2027</option>
+                  <option value="Spring 2028">Spring 2028</option>
+                </select>
+                <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
             </div>
 
-            <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-2 relative">
               <label className="text-xs font-semibold text-gray-400 tracking-wider uppercase">Target Credits</label>
-              <select 
-                value={targetCredits}
-                onChange={(e) => setTargetCredits(e.target.value)}
-                className="bg-[var(--color-dark-card)] border border-[var(--color-glass-border)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-nyu-violet)] appearance-none cursor-pointer text-white"
-              >
-                <option value="16">16 Credits (Standard)</option>
-                <option value="18">18 Credits (Max)</option>
-              </select>
+              <div className="relative">
+                <select 
+                  value={targetCredits}
+                  onChange={(e) => setTargetCredits(e.target.value)}
+                  className="w-full bg-[var(--color-dark-card)] border border-[var(--color-glass-border)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-nyu-violet)] appearance-none cursor-pointer"
+                >
+                  <option value="12">12 Credits</option>
+                  <option value="14">14 Credits</option>
+                  <option value="16">16 Credits</option>
+                  <option value="18">18 Credits</option>
+                </select>
+                <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
             </div>
           </div>
 
