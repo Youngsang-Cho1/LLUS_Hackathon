@@ -12,14 +12,33 @@ export default function DashboardPage() {
   const [uploadState, setUploadState] = useState<"idle" | "uploading" | "success">("idle");
   const [uploadError, setUploadError] = useState("");
   const [extractedCount, setExtractedCount] = useState(0);
+  const [completedCourses, setCompletedCourses] = useState<string[]>([]);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      router.push("/login");
-    } else {
-      setIsLoading(false);
-    }
+    const fetchUserData = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+      
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const res = await fetch(`${apiUrl}/api/user/me`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setCompletedCourses(data.completed_courses || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch user data", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchUserData();
   }, [router]);
 
   if (isLoading) {
@@ -69,6 +88,14 @@ export default function DashboardPage() {
       if (!res.ok) throw new Error("Upload failed");
       const data = await res.json();
       setExtractedCount(data.added_courses?.length || 0);
+      
+      if (data.added_courses && data.added_courses.length > 0) {
+        setCompletedCourses(prev => {
+          const combined = [...prev, ...data.added_courses];
+          return Array.from(new Set(combined));
+        });
+      }
+      
       setUploadState("success");
     } catch (err) {
       console.error(err);
@@ -125,6 +152,33 @@ export default function DashboardPage() {
             <h3 className="text-lg font-bold text-white mb-2">Preferences</h3>
             <p className="text-sm text-gray-400">Update your scheduling preferences, default campuses, and time blocks.</p>
           </div>
+        </div>
+        
+        {/* Classes Taken Section */}
+        <div className="mt-8 bg-[var(--color-dark-bg)] border border-[var(--color-glass-border)] rounded-xl p-6 md:p-8">
+          <div className="flex items-center gap-3 mb-6 border-b border-[var(--color-glass-border)] pb-4">
+            <div className="bg-[var(--color-nyu-violet)]/20 p-2 rounded-lg">
+              <BookOpen className="text-[var(--color-nyu-violet-light)]" size={20} />
+            </div>
+            <h2 className="text-xl font-bold text-white">Classes Taken</h2>
+          </div>
+          
+          {completedCourses.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {completedCourses.map((course, idx) => (
+                <div key={idx} className="bg-[var(--color-dark-bg)] border border-[var(--color-glass-border)] rounded-lg p-4 flex items-center justify-between hover:border-[var(--color-nyu-violet)] transition-colors">
+                  <span className="font-bold text-gray-200">{course}</span>
+                  <CheckCircle size={16} className="text-green-500 opacity-80" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-10 text-center border-2 border-dashed border-[var(--color-glass-border)] rounded-xl">
+              <FileText className="text-gray-600 mb-3" size={32} />
+              <p className="text-gray-400 mb-1">No completed classes found.</p>
+              <p className="text-sm text-gray-500">Upload your transcript to see your progress.</p>
+            </div>
+          )}
         </div>
       </div>
 
