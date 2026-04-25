@@ -25,97 +25,7 @@ interface SchedCourse {
   isWanted?: boolean;
 }
 
-const DEFAULT_SCHEDULE: SchedCourse[] = [
-  {
-    id: "cs340_main",
-    slotKey: "cs340_slot",
-    code: "CSCI-UA 310",
-    section: "-001",
-    title: "Basic Algorithms",
-    credits: 4,
-    timeSlot: { days: ["Mon", "Wed"], startHour: 10, duration: 1.5, room: "Rm 301" },
-    color: "bg-[var(--color-nyu-violet)] border-[var(--color-nyu-violet-light)]"
-  },
-  {
-    id: "bio210_main",
-    slotKey: "bio210_slot",
-    code: "BIO-UA 210",
-    section: "-003",
-    title: "Genetics",
-    credits: 4,
-    timeSlot: { days: ["Tue", "Thu"], startHour: 13, duration: 1.5, room: "Lab 2" },
-    color: "bg-purple-900 border-purple-500"
-  },
-  {
-    id: "cso201_main",
-    slotKey: "cso201_slot",
-    code: "CSCI-UA 201",
-    section: "-005",
-    title: "Computer Systems Org",
-    credits: 4,
-    timeSlot: { days: ["Wed", "Fri"], startHour: 14, duration: 1.5, room: "Aud A" },
-    color: "bg-gray-800 border-gray-500"
-  },
-  {
-    id: "math120_main",
-    slotKey: "math120_slot",
-    code: "MATH-UA 120",
-    section: "-002",
-    title: "Discrete Mathematics",
-    credits: 4,
-    timeSlot: { days: ["Tue", "Thu"], startHour: 15.5, duration: 1.5, room: "Rm 204" },
-    color: "bg-indigo-900 border-indigo-500"
-  }
-];
 
-const MASTER_ALTERNATIVES: Record<string, SchedCourse[]> = {
-  "cso201_slot": [
-    {
-      id: "cso201_alt1",
-      slotKey: "cso201_slot",
-      code: "CSCI-UA 201",
-      section: "-006",
-      title: "Computer Systems Org",
-      credits: 4,
-      timeSlot: { days: ["Tue", "Thu"], startHour: 10, duration: 1.5, room: "Rm 404" },
-      color: "bg-[var(--color-nyu-violet)] border-[var(--color-nyu-violet-light)]"
-    },
-    {
-      id: "cso201_alt2",
-      slotKey: "cso201_slot",
-      code: "CSCI-UA 201",
-      section: "-008",
-      title: "Computer Systems Org",
-      credits: 4,
-      timeSlot: { days: ["Tue", "Thu"], startHour: 17.5, duration: 1.5, room: "Rm 215" },
-      color: "bg-[var(--color-nyu-violet)] border-[var(--color-nyu-violet-light)]"
-    }
-  ],
-  "bio210_slot": [
-    {
-      id: "chem125_alt1",
-      slotKey: "bio210_slot",
-      code: "CHEM-UA 125",
-      section: "-001",
-      title: "General Chemistry",
-      credits: 4,
-      timeSlot: { days: ["Mon", "Wed"], startHour: 14.5, duration: 1.5, room: "Aud B" },
-      color: "bg-teal-900 border-teal-500"
-    }
-  ],
-  "cs340_slot": [
-    {
-      id: "cs340_alt1",
-      slotKey: "cs340_slot",
-      code: "CSCI-UA 310",
-      section: "-004",
-      title: "Basic Algorithms",
-      credits: 4,
-      timeSlot: { days: ["Tue", "Thu"], startHour: 14, duration: 1.5, room: "Rm 301" },
-      color: "bg-[var(--color-nyu-violet)] border-[var(--color-nyu-violet-light)]"
-    }
-  ]
-};
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
@@ -145,13 +55,7 @@ function ResultsContent() {
   const wantedQuery = searchParams.get("wanted") || "";
   const wantedList = wantedQuery.toLowerCase().split(",").map(s => s.trim()).filter(s => s.length > 0);
 
-  const [catalog, setCatalog] = useState<Record<string, SchedCourse[]>>(() => {
-    const combined: Record<string, SchedCourse[]> = {};
-    DEFAULT_SCHEDULE.forEach(course => {
-      combined[course.slotKey] = [course, ...(MASTER_ALTERNATIVES[course.slotKey] || [])];
-    });
-    return combined;
-  });
+  const [catalog, setCatalog] = useState<Record<string, SchedCourse[]>>({});
 
   const [schedule, setSchedule] = useState<SchedCourse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -159,10 +63,7 @@ function ResultsContent() {
 
   useEffect(() => {
     if (wantedList.length === 0) {
-        setSchedule(DEFAULT_SCHEDULE.map(course => ({
-          ...course,
-          isWanted: false
-        })));
+        setSchedule([]);
         setLoading(false);
         return;
     }
