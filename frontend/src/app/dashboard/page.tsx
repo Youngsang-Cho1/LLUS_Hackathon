@@ -125,7 +125,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh] relative">
+    <div className="flex flex-col items-center justify-center min-h-screen relative pt-24 pb-12 px-4">
       <div className="w-full max-w-5xl glass-panel rounded-2xl p-8 md:p-12 relative overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-1 bg-gradient-to-r from-transparent via-[var(--color-nyu-violet)] to-transparent opacity-50"></div>
         
