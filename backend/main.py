@@ -1,24 +1,42 @@
+import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 import uvicorn
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List
 
 from database import get_db
-from models import UserCreate, UserResponse, Token
+from models import (
+    UserCreate, UserResponse, Token,
+    RecommendRequest, RecommendResponse,
+)
 from auth import (
-    get_password_hash, 
-    verify_password, 
-    create_access_token, 
+    get_password_hash,
+    verify_password,
+    create_access_token,
     ACCESS_TOKEN_EXPIRE_MINUTES,
     get_current_user_email
 )
+from recommend import CourseRecommender
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    emb_path = os.getenv("EMBEDDINGS_PATH", "/scraper/embeddings.npy")
+    idx_path = os.getenv("COURSE_INDEX_PATH", "/scraper/course_index.json")
+    print(f"[startup] Loading recommender from {emb_path} + {idx_path}…")
+    app.state.recommender = CourseRecommender(emb_path, idx_path)
+    print(f"[startup] Recommender ready ({app.state.recommender.emb.shape[0]} courses).")
+    yield
+
 
 app = FastAPI(
     title="NYU Course Search API",
     description="API for the Ultimate NYU Course Search Web App",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -51,7 +69,7 @@ async def register_user(user: UserCreate, db=Depends(get_db)):
         "hashed_password": hashed_pwd,
         "completed_courses": [],
         "preferences": {"target_credits": 16, "max_workload": 4.5},
-        "created_at": datetime.utcnow()
+        "created_at": datetime.now(timezone.utc)
     }
     
     result = await db.users.insert_one(user_doc)
@@ -123,6 +141,21 @@ async def upload_transcript(
         "message": f"Successfully extracted and saved {len(extracted_courses)} courses from {file.filename}.",
         "added_courses": extracted_courses
     }
+
+# --- RECOMMENDATION ROUTE ---
+
+@app.post("/api/recommend", response_model=RecommendResponse)
+async def recommend_courses(req: RecommendRequest):
+    """Top-k semantic course recommendations for a free-text query."""
+    if not req.query.strip():
+        raise HTTPException(status_code=400, detail="query must not be empty")
+    if req.k < 1 or req.k > 50:
+        raise HTTPException(status_code=400, detail="k must be in [1, 50]")
+    results = app.state.recommender.recommend(
+        query=req.query, k=req.k, subject=req.subject
+    )
+    return {"results": results}
+
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
