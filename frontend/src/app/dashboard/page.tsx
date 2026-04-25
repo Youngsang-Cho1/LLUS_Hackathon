@@ -13,6 +13,7 @@ export default function DashboardPage() {
   const [uploadError, setUploadError] = useState("");
   const [extractedCount, setExtractedCount] = useState(0);
   const [completedCourses, setCompletedCourses] = useState<string[]>([]);
+  const [classesToTake, setClassesToTake] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -30,6 +31,7 @@ export default function DashboardPage() {
         if (res.ok) {
           const data = await res.json();
           setCompletedCourses(data.completed_courses || []);
+          setClassesToTake(data.classes_to_take || []);
         }
       } catch (err) {
         console.error("Failed to fetch user data", err);
@@ -94,6 +96,19 @@ export default function DashboardPage() {
           const combined = [...prev, ...data.added_courses];
           return Array.from(new Set(combined));
         });
+        
+        // Re-fetch user data to get updated classes_to_take
+        try {
+          const resMe = await fetch(`${apiUrl}/api/user/me`, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          if (resMe.ok) {
+            const dataMe = await resMe.json();
+            setClassesToTake(dataMe.classes_to_take || []);
+          }
+        } catch (e) {
+          console.error("Failed to refresh user data", e);
+        }
       }
       
       setUploadState("success");
@@ -177,6 +192,33 @@ export default function DashboardPage() {
               <FileText className="text-gray-600 mb-3" size={32} />
               <p className="text-gray-400 mb-1">No completed classes found.</p>
               <p className="text-sm text-gray-500">Upload your transcript to see your progress.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Classes To Take Section */}
+        <div className="mt-8 bg-[var(--color-dark-bg)] border border-[var(--color-glass-border)] rounded-xl p-6 md:p-8">
+          <div className="flex items-center gap-3 mb-6 border-b border-[var(--color-glass-border)] pb-4">
+            <div className="bg-orange-500/20 p-2 rounded-lg">
+              <AlertCircle className="text-orange-400" size={20} />
+            </div>
+            <h2 className="text-xl font-bold text-white">Classes To Take</h2>
+          </div>
+          
+          {classesToTake.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {classesToTake.map((course, idx) => (
+                <div key={idx} className="bg-[var(--color-dark-bg)] border border-[var(--color-glass-border)] rounded-lg p-4 flex items-center justify-between hover:border-orange-500/50 transition-colors">
+                  <span className="font-bold text-gray-200">{course}</span>
+                  <div className="w-4 h-4 rounded-full border-2 border-orange-500/50"></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-10 text-center border-2 border-dashed border-[var(--color-glass-border)] rounded-xl">
+              <FileText className="text-gray-600 mb-3" size={32} />
+              <p className="text-gray-400 mb-1">You have completed all requirements!</p>
+              <p className="text-sm text-gray-500">Or we couldn't find your program track.</p>
             </div>
           )}
         </div>
