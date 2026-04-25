@@ -1,0 +1,168 @@
+"use client";
+
+import { BookOpen, Calendar, Settings, UploadCloud, CheckCircle, AlertCircle, X, FileText } from "lucide-react";
+import { useState } from "react";
+
+export default function DashboardPage() {
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploadState, setUploadState] = useState<"idle" | "uploading" | "success">("idle");
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    simulateUpload();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      simulateUpload();
+    }
+  };
+
+  const simulateUpload = () => {
+    setUploadState("uploading");
+    setTimeout(() => {
+      setUploadState("success");
+    }, 2000);
+  };
+
+  const closeModal = () => {
+    setShowUploadModal(false);
+    setTimeout(() => setUploadState("idle"), 300);
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[80vh] relative">
+      <div className="w-full max-w-5xl glass-panel rounded-2xl p-8 md:p-12 relative overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-1 bg-gradient-to-r from-transparent via-[var(--color-nyu-violet)] to-transparent opacity-50"></div>
+        
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 border-b border-[var(--color-glass-border)] pb-6 gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">My Dashboard</h1>
+            <p className="text-gray-400">Manage your saved schedules and academic progress.</p>
+          </div>
+          <button 
+            onClick={() => setShowUploadModal(true)}
+            className="bg-[var(--color-nyu-violet)] hover:bg-[var(--color-nyu-violet-light)] text-white px-5 py-2.5 rounded-lg font-semibold flex items-center gap-2 shadow-[0_0_15px_rgba(87,6,140,0.4)] hover:shadow-[0_0_25px_rgba(87,6,140,0.6)] transition-all"
+          >
+            <UploadCloud size={18} />
+            Update Transcript
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-[var(--color-dark-bg)] border border-[var(--color-glass-border)] rounded-xl p-6 hover:border-[var(--color-nyu-violet)] transition-colors cursor-pointer group">
+            <div className="bg-[var(--color-nyu-violet)]/20 p-3 rounded-lg w-fit mb-4 group-hover:scale-110 transition-transform">
+              <Calendar className="text-[var(--color-nyu-violet-light)]" size={24} />
+            </div>
+            <h3 className="text-lg font-bold text-white mb-2">Saved Schedules</h3>
+            <p className="text-sm text-gray-400">View and edit your previously generated semester plans.</p>
+          </div>
+          
+          <div className="bg-[var(--color-dark-bg)] border border-[var(--color-glass-border)] rounded-xl p-6 hover:border-[var(--color-nyu-violet)] transition-colors cursor-pointer group">
+            <div className="bg-[var(--color-nyu-violet)]/20 p-3 rounded-lg w-fit mb-4 group-hover:scale-110 transition-transform">
+              <BookOpen className="text-[var(--color-nyu-violet-light)]" size={24} />
+            </div>
+            <h3 className="text-lg font-bold text-white mb-2">Degree Requirements</h3>
+            <p className="text-sm text-gray-400">Track your progress toward graduation and major completion.</p>
+          </div>
+          
+          <div className="bg-[var(--color-dark-bg)] border border-[var(--color-glass-border)] rounded-xl p-6 hover:border-[var(--color-nyu-violet)] transition-colors cursor-pointer group">
+            <div className="bg-[var(--color-nyu-violet)]/20 p-3 rounded-lg w-fit mb-4 group-hover:scale-110 transition-transform">
+              <Settings className="text-[var(--color-nyu-violet-light)]" size={24} />
+            </div>
+            <h3 className="text-lg font-bold text-white mb-2">Preferences</h3>
+            <p className="text-sm text-gray-400">Update your workload limits, default campuses, and more.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Upload Modal Overlay */}
+      {showUploadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-[var(--color-dark-card)] border border-[var(--color-glass-border)] rounded-2xl w-full max-w-2xl p-8 relative shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300">
+            <button 
+              onClick={closeModal}
+              className="absolute top-6 right-6 text-gray-400 hover:text-white bg-[var(--color-dark-bg)] p-2 rounded-full transition-colors"
+            >
+              <X size={20} />
+            </button>
+            
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold mb-2 text-white">Upload Latest Transcript</h2>
+              <p className="text-gray-400 text-sm">Keep your prerequisite profile up to date by uploading your newest unofficial transcript.</p>
+            </div>
+
+            <div 
+              className={`border-2 border-dashed rounded-xl p-10 flex flex-col items-center justify-center transition-all duration-300
+                ${isDragging ? 'border-[var(--color-nyu-violet-light)] bg-[var(--color-nyu-violet)]/10 scale-[1.02]' : 'border-[var(--color-glass-border)] hover:border-gray-500 hover:bg-[var(--color-glass)]'}
+                ${uploadState === 'success' ? 'border-green-500 bg-green-500/10' : ''}
+              `}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              {uploadState === "idle" && (
+                <>
+                  <div className="bg-[var(--color-dark-bg)] p-4 rounded-full shadow-lg mb-4">
+                    <FileText size={32} className="text-[var(--color-nyu-violet-light)]" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-1">Drag & Drop your file here</h3>
+                  <p className="text-xs text-gray-400 mb-6">Supports PDF, PNG, JPG</p>
+                  
+                  <label className="bg-[var(--color-nyu-violet)] hover:bg-[var(--color-nyu-violet-light)] text-white px-6 py-2 rounded-lg font-semibold cursor-pointer shadow-[0_0_15px_rgba(87,6,140,0.4)] transition-all">
+                    Browse Files
+                    <input type="file" className="hidden" accept=".pdf,image/*" onChange={handleFileChange} />
+                  </label>
+                </>
+              )}
+
+              {uploadState === "uploading" && (
+                <div className="flex flex-col items-center py-6">
+                  <div className="w-12 h-12 border-4 border-[var(--color-glass-border)] border-t-[var(--color-nyu-violet-light)] rounded-full animate-spin mb-4"></div>
+                  <h3 className="text-lg font-bold text-white mb-1">Analyzing Data...</h3>
+                  <p className="text-xs text-[var(--color-nyu-violet-light)]">Extracting new courses added since last upload</p>
+                </div>
+              )}
+
+              {uploadState === "success" && (
+                <div className="flex flex-col items-center py-6">
+                  <div className="bg-green-500/20 p-3 rounded-full mb-4">
+                    <CheckCircle size={32} className="text-green-400" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-1">Profile Updated!</h3>
+                  <p className="text-xs text-gray-400 mb-6 text-center">Found 4 new completed courses.</p>
+                  
+                  <button 
+                    onClick={closeModal}
+                    className="bg-green-600 hover:bg-green-500 text-white px-8 py-2 rounded-lg font-bold transition-all"
+                  >
+                    Done
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 flex items-start gap-3 p-3 rounded-lg bg-[var(--color-dark-bg)] border border-[var(--color-glass-border)]">
+              <AlertCircle className="text-[var(--color-nyu-violet-light)] shrink-0 mt-0.5" size={16} />
+              <p className="text-[11px] text-gray-400 leading-relaxed">
+                We only extract course codes (e.g. CSCI-UA 101) to verify prerequisites. We do not store or process your grades, GPA, or any sensitive personal information.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
