@@ -127,12 +127,21 @@ async def read_users_me(email: str = Depends(get_current_user_email), db=Depends
     user = await db.users.find_one({"email": email})
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
+        
+    completed = user.get("completed_courses", [])
+    
+    # HACKATHON MOCK: Simulate requirement_diff.py output
+    # Since cas_programs collection isn't seeded in docker DB, we mock the required courses
+    required_mock = ["CSCI-UA 101", "CSCI-UA 102", "CSCI-UA 201", "CSCI-UA 202", "CSCI-UA 310", "CSCI-UA 473", "MATH-UA 120", "MATH-UA 121", "CORE-UA 101", "CORE-UA 400"]
+    classes_to_take = [c for c in required_mock if c not in completed]
+    
     return UserResponse(
         id=str(user["_id"]),
         first_name=user["first_name"],
         last_name=user["last_name"],
         email=user["email"],
-        completed_courses=user.get("completed_courses", []),
+        completed_courses=completed,
+        classes_to_take=classes_to_take,
         preferences=user.get("preferences", {})
     )
 
@@ -340,18 +349,37 @@ async def recommend_courses(
 # --- RECOMMENDATION ROUTE (REAL ML) ---
 @app.post("/api/recommend", response_model=RecommendResponse)
 async def real_recommend_courses(req: RecommendRequest):
-    """Top-k semantic course recommendations for a free-text query."""
+    """Text-based course search using course name or code."""
     if not req.query.strip():
         raise HTTPException(status_code=400, detail="query must not be empty")
     if req.k < 1 or req.k > 50:
         raise HTTPException(status_code=400, detail="k must be in [1, 50]")
         
-    if not hasattr(app.state, "recommender"):
-        raise HTTPException(status_code=500, detail="Recommender model not loaded")
+    query_lower = req.query.lower().strip()
+    results = []
+    
+    # 1. Search by exact or partial string matching on course code or title
+    for course_code, sections in app.state.courses_db.items():
+        if not sections: continue
         
-    results = app.state.recommender.recommend(
-        query=req.query, k=req.k, subject=req.subject
-    )
+        first = sections[0]
+        title = first.get("title", "")
+        desc = first.get("description", "")
+        subject_prefix = first.get("subject", course_code.split("-")[0] if "-" in course_code else "")
+        
+        # Match check
+        if query_lower in course_code.lower() or query_lower in title.lower():
+            results.append({
+                "course_code": course_code,
+                "subject_prefix": subject_prefix,
+                "title": title,
+                "description": desc,
+                "score": 100.0  # High score for text match
+            })
+            
+            if len(results) >= req.k:
+                break
+                
     return {"results": results}
 
 
