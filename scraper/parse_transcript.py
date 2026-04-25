@@ -23,7 +23,7 @@ import pdfplumber
 # e.g. "CS-UY 1114 4.0 B+", "CSCI-UA 201 4.0 B", "EXPOS-UA 4 4.0 B+", "TECH-UB 26 1.5 ***"
 COURSE_RE = re.compile(
     r"(?P<code>[A-Z]{2,5}-[A-Z]{2})\s+"
-    r"(?P<num>\d+[A-Z]?)\s+"
+    r"(?P<num>\d+[A-Z]?)(?:-(?P<section>[A-Z0-9]+))?\s+"
     r"(?P<credits>\d+\.\d+)\s+"
     r"(?P<grade>\*\*\*|[A-Z][+\-]?|P|F|W|I)(?=\s|$)"
 )
