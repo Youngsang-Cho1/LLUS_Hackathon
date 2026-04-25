@@ -21,3 +21,9 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+
+# AI Tools & Editors
+.claude/
+.gemini/
+.cursor/
+.cursorrules
