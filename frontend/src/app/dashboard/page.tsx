@@ -143,32 +143,7 @@ export default function DashboardPage() {
           </button>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-[var(--color-dark-bg)] border border-[var(--color-glass-border)] rounded-xl p-6 hover:border-[var(--color-nyu-violet)] transition-colors cursor-pointer group">
-            <div className="bg-[var(--color-nyu-violet)]/20 p-3 rounded-lg w-fit mb-4 group-hover:scale-110 transition-transform">
-              <Calendar className="text-[var(--color-nyu-violet-light)]" size={24} />
-            </div>
-            <h3 className="text-lg font-bold text-white mb-2">Saved Schedules</h3>
-            <p className="text-sm text-gray-400">View and edit your previously generated semester plans.</p>
-          </div>
-          
-          <div className="bg-[var(--color-dark-bg)] border border-[var(--color-glass-border)] rounded-xl p-6 hover:border-[var(--color-nyu-violet)] transition-colors cursor-pointer group">
-            <div className="bg-[var(--color-nyu-violet)]/20 p-3 rounded-lg w-fit mb-4 group-hover:scale-110 transition-transform">
-              <BookOpen className="text-[var(--color-nyu-violet-light)]" size={24} />
-            </div>
-            <h3 className="text-lg font-bold text-white mb-2">Degree Requirements</h3>
-            <p className="text-sm text-gray-400">Track your progress toward graduation and major completion.</p>
-          </div>
-          
-          <div className="bg-[var(--color-dark-bg)] border border-[var(--color-glass-border)] rounded-xl p-6 hover:border-[var(--color-nyu-violet)] transition-colors cursor-pointer group">
-            <div className="bg-[var(--color-nyu-violet)]/20 p-3 rounded-lg w-fit mb-4 group-hover:scale-110 transition-transform">
-              <Settings className="text-[var(--color-nyu-violet-light)]" size={24} />
-            </div>
-            <h3 className="text-lg font-bold text-white mb-2">Preferences</h3>
-            <p className="text-sm text-gray-400">Update your scheduling preferences, default campuses, and time blocks.</p>
-          </div>
-        </div>
-        
+
         {/* Classes Taken Section */}
         <div className="mt-8 bg-[var(--color-dark-bg)] border border-[var(--color-glass-border)] rounded-xl p-6 md:p-8">
           <div className="flex items-center gap-3 mb-6 border-b border-[var(--color-glass-border)] pb-4">
