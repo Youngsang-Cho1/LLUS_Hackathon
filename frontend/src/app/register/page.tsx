@@ -8,9 +8,66 @@ export default function RegisterPage() {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
 
+  // Form State
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
   // Upload State
   const [isDragging, setIsDragging] = useState(false);
   const [uploadState, setUploadState] = useState<"idle" | "uploading" | "success">("idle");
+  const [extractedCount, setExtractedCount] = useState(0);
+
+  const handleCreateAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
+
+    try {
+      // 1. Register
+      const resReg = await fetch("http://localhost:8000/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: lastName,
+          email: email,
+          password: password,
+        }),
+      });
+
+      if (!resReg.ok) {
+        const data = await resReg.json();
+        throw new Error(data.detail || "Registration failed");
+      }
+
+      // 2. Login immediately to get token
+      const formData = new URLSearchParams();
+      formData.append("username", email);
+      formData.append("password", password);
+
+      const resLogin = await fetch("http://localhost:8000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: formData,
+      });
+
+      if (!resLogin.ok) throw new Error("Auto-login failed after registration");
+
+      const data = await resLogin.json();
+      localStorage.setItem("token", data.access_token);
+      
+      setStep(2);
+
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -21,33 +78,51 @@ export default function RegisterPage() {
     setIsDragging(false);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    simulateUpload();
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      simulateUpload();
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      await uploadTranscript(e.dataTransfer.files[0]);
     }
   };
 
-  const simulateUpload = () => {
-    setUploadState("uploading");
-    setTimeout(() => {
-      setUploadState("success");
-    }, 2000);
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      await uploadTranscript(e.target.files[0]);
+    }
   };
 
-  const handleCreateAccount = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Simulate successful account creation, move to step 2
-    setStep(2);
+  const uploadTranscript = async (file: File) => {
+    setUploadState("uploading");
+    
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:8000/api/user/transcript", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error("Upload failed");
+      
+      const data = await res.json();
+      setExtractedCount(data.added_courses?.length || 0);
+      setUploadState("success");
+
+    } catch (err) {
+      console.error(err);
+      alert("Failed to upload transcript.");
+      setUploadState("idle");
+    }
   };
 
   const handleFinish = () => {
-    router.push("/");
+    window.location.href = "/";
   };
 
   return (
@@ -75,6 +150,12 @@ export default function RegisterPage() {
               <p className="text-gray-400 text-sm mt-1">Join NYUSearch and optimize your semester</p>
             </div>
 
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/50 text-red-400 text-sm px-4 py-3 rounded-lg mb-6">
+                {error}
+              </div>
+            )}
+
             <form onSubmit={handleCreateAccount} className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
@@ -82,6 +163,8 @@ export default function RegisterPage() {
                   <input 
                     type="text" 
                     required
+                    value={firstName}
+                    onChange={e => setFirstName(e.target.value)}
                     placeholder="John"
                     className="w-full bg-[var(--color-dark-bg)] border border-[var(--color-glass-border)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-nyu-violet)] text-white placeholder:text-gray-600"
                   />
@@ -91,6 +174,8 @@ export default function RegisterPage() {
                   <input 
                     type="text" 
                     required
+                    value={lastName}
+                    onChange={e => setLastName(e.target.value)}
                     placeholder="Doe"
                     className="w-full bg-[var(--color-dark-bg)] border border-[var(--color-glass-border)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-nyu-violet)] text-white placeholder:text-gray-600"
                   />
@@ -98,10 +183,12 @@ export default function RegisterPage() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-semibold text-gray-400 tracking-wider uppercase">Email Address (NYU NetID preferred)</label>
+                <label className="text-xs font-semibold text-gray-400 tracking-wider uppercase">Email Address</label>
                 <input 
                   type="email" 
                   required
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
                   placeholder="netid@nyu.edu"
                   className="w-full bg-[var(--color-dark-bg)] border border-[var(--color-glass-border)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-nyu-violet)] text-white placeholder:text-gray-600"
                 />
@@ -112,6 +199,8 @@ export default function RegisterPage() {
                 <input 
                   type="password" 
                   required
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="w-full bg-[var(--color-dark-bg)] border border-[var(--color-glass-border)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-nyu-violet)] text-white placeholder:text-gray-600"
                 />
@@ -119,9 +208,12 @@ export default function RegisterPage() {
 
               <button 
                 type="submit" 
-                className="w-full bg-gradient-to-r from-[var(--color-nyu-violet-light)] to-[var(--color-nyu-violet)] py-3 rounded-lg font-bold text-white shadow-[0_0_15px_rgba(87,6,140,0.5)] hover:shadow-[0_0_25px_rgba(87,6,140,0.7)] transition-all mt-2"
+                disabled={isLoading}
+                className={`w-full py-3 rounded-lg font-bold text-white transition-all mt-2
+                  ${isLoading ? 'bg-gray-600 cursor-not-allowed' : 'bg-gradient-to-r from-[var(--color-nyu-violet-light)] to-[var(--color-nyu-violet)] shadow-[0_0_15px_rgba(87,6,140,0.5)] hover:shadow-[0_0_25px_rgba(87,6,140,0.7)]'}
+                `}
               >
-                Continue to Step 2
+                {isLoading ? 'Creating Account...' : 'Continue to Step 2'}
               </button>
             </form>
 
@@ -189,23 +281,23 @@ export default function RegisterPage() {
                     <CheckCircle size={36} className="text-green-400" />
                   </div>
                   <h3 className="text-lg font-bold text-white mb-2">Extraction Complete!</h3>
-                  <p className="text-sm text-gray-400 mb-8 text-center max-w-sm">We successfully found 14 completed courses. Your prerequisite profile is now up to date.</p>
+                  <p className="text-sm text-gray-400 mb-8 text-center max-w-sm">We successfully found {extractedCount} completed courses. Your prerequisite profile is now up to date.</p>
                   
                   <button 
                     onClick={handleFinish}
                     className="bg-[var(--color-nyu-violet)] hover:bg-[var(--color-nyu-violet-light)] text-white px-8 py-3 rounded-full font-bold shadow-[0_0_15px_rgba(87,6,140,0.5)] transition-all"
                   >
-                    Go to Dashboard
+                    Go to Home
                   </button>
                 </div>
               )}
             </div>
 
-            <div className="mt-6 flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-              <AlertCircle className="text-blue-400 shrink-0 mt-0.5" size={18} />
+            <div className="mt-6 flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-[var(--color-nyu-violet)]/20">
+              <AlertCircle className="text-[var(--color-nyu-violet-light)] shrink-0 mt-0.5" size={18} />
               <div>
-                <h4 className="text-sm font-bold text-blue-100 mb-1">Privacy First</h4>
-                <p className="text-xs text-blue-200/70 leading-relaxed">Your transcript data is processed locally and immediately discarded after extracting course codes. We never store your grades or personal identifying information.</p>
+                <h4 className="text-sm font-bold text-white mb-1">Privacy First</h4>
+                <p className="text-xs text-gray-400 leading-relaxed">Your transcript data is processed locally and immediately discarded after extracting course codes. We never store your grades or personal identifying information.</p>
               </div>
             </div>
           </div>

@@ -1,12 +1,32 @@
 "use client";
 
 import { BookOpen, Calendar, Settings, UploadCloud, CheckCircle, AlertCircle, X, FileText } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadState, setUploadState] = useState<"idle" | "uploading" | "success">("idle");
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/login");
+    } else {
+      setIsLoading(false);
+    }
+  }, [router]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[80vh]">
+        <div className="w-10 h-10 border-4 border-[var(--color-glass-border)] border-t-[var(--color-nyu-violet-light)] rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
