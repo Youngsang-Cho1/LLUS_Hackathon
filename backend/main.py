@@ -2,11 +2,13 @@ from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 import uvicorn
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List
+from contextlib import asynccontextmanager
+import os
 
 from database import get_db
-from models import UserCreate, UserResponse, Token, CourseQuery
+from models import UserCreate, UserResponse, Token, CourseQuery, RecommendRequest, RecommendResponse
 from auth import (
     get_password_hash, 
     verify_password, 
@@ -14,11 +16,25 @@ from auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     get_current_user_email
 )
+from recommend import CourseRecommender
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    emb_path = os.getenv("EMBEDDINGS_PATH", "/scraper/embeddings.npy")
+    idx_path = os.getenv("COURSE_INDEX_PATH", "/scraper/course_index.json")
+    try:
+        print(f"[startup] Loading recommender from {emb_path} + {idx_path}…")
+        app.state.recommender = CourseRecommender(emb_path, idx_path)
+        print(f"[startup] Recommender ready ({app.state.recommender.emb.shape[0]} courses).")
+    except Exception as e:
+        print(f"[startup] Recommender failed to load: {e}")
+    yield
 
 app = FastAPI(
     title="NYU Course Search API",
     description="API for the Ultimate NYU Course Search Web App",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 app.add_middleware(
@@ -272,6 +288,23 @@ async def recommend_courses(
             
     results.sort(key=lambda x: x["score"], reverse=True)
     return {"results": results[:3]}
+
+# --- RECOMMENDATION ROUTE (REAL ML) ---
+@app.post("/api/recommend", response_model=RecommendResponse)
+async def real_recommend_courses(req: RecommendRequest):
+    """Top-k semantic course recommendations for a free-text query."""
+    if not req.query.strip():
+        raise HTTPException(status_code=400, detail="query must not be empty")
+    if req.k < 1 or req.k > 50:
+        raise HTTPException(status_code=400, detail="k must be in [1, 50]")
+        
+    if not hasattr(app.state, "recommender"):
+        raise HTTPException(status_code=500, detail="Recommender model not loaded")
+        
+    results = app.state.recommender.recommend(
+        query=req.query, k=req.k, subject=req.subject
+    )
+    return {"results": results}
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

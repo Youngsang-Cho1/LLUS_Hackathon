@@ -26,9 +26,11 @@ export default function RegisterPage() {
     setError("");
     setIsLoading(true);
 
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
     try {
       // 1. Register
-      const resReg = await fetch("http://localhost:8000/api/auth/register", {
+      const resReg = await fetch(`${apiUrl}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -49,7 +51,7 @@ export default function RegisterPage() {
       formData.append("username", email);
       formData.append("password", password);
 
-      const resLogin = await fetch("http://localhost:8000/api/auth/login", {
+      const resLogin = await fetch(`${apiUrl}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: formData,
@@ -100,7 +102,8 @@ export default function RegisterPage() {
       formData.append("file", file);
 
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:8000/api/user/transcript", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiUrl}/api/user/transcript`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`

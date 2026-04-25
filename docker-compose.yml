@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   frontend:
     build:
@@ -20,17 +18,60 @@ services:
       - "8000:8000"
     environment:
       - MONGODB_URI=mongodb://mongodb:27017
+      - EMBEDDINGS_PATH=/scraper/embeddings.npy
+      - COURSE_INDEX_PATH=/scraper/course_index.json
+      - HF_HOME=/cache/huggingface
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     volumes:
       - ./backend:/app
+      - ./scraper:/scraper:ro      # read-only access to embeddings + index
+      - hf_cache:/cache/huggingface  # share BGE model cache with scraper
 
   mongodb:
-    image: mongo:latest
+    image: mongo:7
+    container_name: llus-mongo
+    restart: unless-stopped
     ports:
       - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: nyu_bulletins
     volumes:
       - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo-express:
+    image: mongo-express:1
+    container_name: llus-mongo-express
+    restart: unless-stopped
+    ports:
+      - "8082:8081"
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://mongodb:27017
+      ME_CONFIG_BASICAUTH: "false"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  scraper:
+    build: ./scraper
+    container_name: llus-scraper
+    working_dir: /app
+    volumes:
+      - ./scraper:/app          # source + outputs (csv/json/npy land on host)
+      - hf_cache:/cache/huggingface  # cache HF model downloads across runs
+    environment:
+      MONGO_URI: mongodb://mongodb:27017
+      MONGO_DB: nyu_bulletins
+      MONGO_COLLECTION: cas_programs
+      HF_HOME: /cache/huggingface
+    profiles: ["run"]           # opt-in: docker compose --profile run …
 
 volumes:
   mongodb_data:
+  hf_cache:

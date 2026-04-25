@@ -10,6 +10,8 @@ export default function DashboardPage() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadState, setUploadState] = useState<"idle" | "uploading" | "success">("idle");
+  const [uploadError, setUploadError] = useState("");
+  const [extractedCount, setExtractedCount] = useState(0);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -37,23 +39,42 @@ export default function DashboardPage() {
     setIsDragging(false);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    simulateUpload();
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      simulateUpload();
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      await uploadTranscript(e.dataTransfer.files[0]);
     }
   };
 
-  const simulateUpload = () => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      await uploadTranscript(e.target.files[0]);
+    }
+  };
+
+  const uploadTranscript = async (file: File) => {
     setUploadState("uploading");
-    setTimeout(() => {
+    setUploadError("");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const token = localStorage.getItem("token");
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiUrl}/api/user/transcript`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}` },
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const data = await res.json();
+      setExtractedCount(data.added_courses?.length || 0);
       setUploadState("success");
-    }, 2000);
+    } catch (err) {
+      console.error(err);
+      setUploadError("Failed to upload transcript.");
+      setUploadState("idle");
+    }
   };
 
   const closeModal = () => {
@@ -139,7 +160,9 @@ export default function DashboardPage() {
                   </div>
                   <h3 className="text-lg font-bold text-white mb-1">Drag & Drop your file here</h3>
                   <p className="text-xs text-gray-400 mb-6">Supports PDF, PNG, JPG</p>
-                  
+                  {uploadError && (
+                    <p className="text-xs text-red-400 mb-4">{uploadError}</p>
+                  )}
                   <label className="bg-[var(--color-nyu-violet)] hover:bg-[var(--color-nyu-violet-light)] text-white px-6 py-2 rounded-lg font-semibold cursor-pointer shadow-[0_0_15px_rgba(87,6,140,0.4)] transition-all">
                     Browse Files
                     <input type="file" className="hidden" accept=".pdf,image/*" onChange={handleFileChange} />
@@ -161,7 +184,7 @@ export default function DashboardPage() {
                     <CheckCircle size={32} className="text-green-400" />
                   </div>
                   <h3 className="text-lg font-bold text-white mb-1">Profile Updated!</h3>
-                  <p className="text-xs text-gray-400 mb-6 text-center">Found 4 new completed courses.</p>
+                  <p className="text-xs text-gray-400 mb-6 text-center">Found {extractedCount} new completed courses.</p>
                   
                   <button 
                     onClick={closeModal}
