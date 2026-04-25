@@ -6,9 +6,10 @@ from datetime import datetime, timedelta, timezone
 from typing import List
 from contextlib import asynccontextmanager
 import os
+import csv
 
 from database import get_db
-from models import UserCreate, UserResponse, Token, CourseQuery, RecommendRequest, RecommendResponse
+from models import UserCreate, UserResponse, Token, CourseQuery, RecommendRequest, RecommendResponse, ScheduleRequest, ScheduleResponse
 from auth import (
     get_password_hash, 
     verify_password, 
@@ -28,6 +29,20 @@ async def lifespan(app: FastAPI):
         print(f"[startup] Recommender ready ({app.state.recommender.emb.shape[0]} courses).")
     except Exception as e:
         print(f"[startup] Recommender failed to load: {e}")
+        
+    # Load course db for schedule generation
+    courses_csv = os.getenv("COURSES_CSV_PATH", "/scraper/cas_courses.csv")
+    courses_db = {}
+    try:
+        if os.path.exists(courses_csv):
+            with open(courses_csv, mode='r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    courses_db[row['course_code']] = row
+            print(f"[startup] Loaded {len(courses_db)} courses from CSV.")
+    except Exception as e:
+        print(f"[startup] Failed to load courses CSV: {e}")
+    app.state.courses_db = courses_db
     yield
 
 app = FastAPI(
@@ -306,5 +321,75 @@ async def real_recommend_courses(req: RecommendRequest):
     )
     return {"results": results}
 
+
+def parse_schedule(schedule_str: str):
+    if not schedule_str or schedule_str == "TBA" or schedule_str == "TBD":
+        return {"days": ["TBA"], "startHour": 10, "duration": 1.5, "room": "TBA"}
+        
+    days = []
+    if 'M' in schedule_str: days.append("Mon")
+    if 'T' in schedule_str: days.append("Tue")
+    if 'W' in schedule_str: days.append("Wed")
+    if 'R' in schedule_str: days.append("Thu")
+    if 'F' in schedule_str: days.append("Fri")
+    
+    start_hour = 10.0
+    duration = 1.25
+    try:
+        parts = schedule_str.split(" ")
+        if len(parts) > 1:
+            time_part = parts[1]
+            times = time_part.split("-")
+            start_time = times[0]
+            if ':' in start_time:
+                h, m = start_time.replace('a','').replace('p','').split(":")
+                start_hour = float(h) + (float(m) / 60.0)
+            else:
+                start_hour = float(start_time.replace('a','').replace('p',''))
+                
+            # Naive AM/PM logic (most afternoon classes don't explicitly say PM if end time says PM, but TR 2-3:15p means 2 is PM)
+            if start_hour < 8 or ('p' in time_part.lower() and start_hour < 12 and start_hour >= 1):
+                start_hour += 12
+    except:
+        pass
+        
+    if not days:
+        days = ["TBA"]
+        
+    return {"days": days, "startHour": start_hour, "duration": duration, "room": "TBA"}
+
+@app.post("/api/schedule/generate", response_model=ScheduleResponse)
+async def generate_schedule(req: ScheduleRequest):
+    results = []
+    for code in req.course_codes:
+        course_data = app.state.courses_db.get(code)
+        if course_data:
+            time_slot = parse_schedule(course_data.get("schedule", ""))
+            try:
+                c_credits = int(float(course_data.get("credits", 4)))
+            except:
+                c_credits = 4
+                
+            results.append({
+                "code": code,
+                "section": course_data.get("section", "001"),
+                "title": course_data.get("course_name", code) or code,
+                "description": "", 
+                "timeSlot": time_slot,
+                "credits": c_credits
+            })
+        else:
+            results.append({
+                "code": code,
+                "section": "001",
+                "title": code,
+                "description": "",
+                "timeSlot": {"days": ["Mon", "Wed"], "startHour": 14.0, "duration": 1.5, "room": "TBA"},
+                "credits": 4
+            })
+            
+    return {"courses": results}
+
 if __name__ == "__main__":
+
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

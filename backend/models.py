@@ -55,3 +55,23 @@ class RecommendedCourse(BaseModel):
 
 class RecommendResponse(BaseModel):
     results: List[RecommendedCourse]
+
+class ScheduleRequest(BaseModel):
+    course_codes: List[str]
+
+class TimeSlot(BaseModel):
+    days: List[str]
+    startHour: float
+    duration: float
+    room: str
+
+class ScheduledCourse(BaseModel):
+    code: str
+    section: str
+    title: str
+    description: str
+    timeSlot: TimeSlot
+    credits: int
+
+class ScheduleResponse(BaseModel):
+    courses: List[ScheduledCourse]

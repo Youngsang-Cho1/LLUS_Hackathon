@@ -143,9 +143,9 @@ function ResultsContent() {
   const searchParams = useSearchParams();
   const credits = searchParams.get("targetCredits") || "16";
   const wantedQuery = searchParams.get("wanted") || "";
-  const wantedList = wantedQuery.toLowerCase().split(",").map(s => s.trim());
+  const wantedList = wantedQuery.toLowerCase().split(",").map(s => s.trim()).filter(s => s.length > 0);
 
-  const [catalog] = useState<Record<string, SchedCourse[]>>(() => {
+  const [catalog, setCatalog] = useState<Record<string, SchedCourse[]>>(() => {
     const combined: Record<string, SchedCourse[]> = {};
     DEFAULT_SCHEDULE.forEach(course => {
       combined[course.slotKey] = [course, ...(MASTER_ALTERNATIVES[course.slotKey] || [])];
@@ -153,15 +153,62 @@ function ResultsContent() {
     return combined;
   });
 
-  const initialSchedule = useMemo(() => {
-    return DEFAULT_SCHEDULE.map(course => ({
-      ...course,
-      isWanted: wantedList.includes(course.code.toLowerCase())
-    }));
-  }, [wantedList]);
-
-  const [schedule, setSchedule] = useState<SchedCourse[]>(initialSchedule);
+  const [schedule, setSchedule] = useState<SchedCourse[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (wantedList.length === 0) {
+        setSchedule(DEFAULT_SCHEDULE.map(course => ({
+          ...course,
+          isWanted: false
+        })));
+        setLoading(false);
+        return;
+    }
+    
+    const fetchSchedule = async () => {
+        try {
+            const courseCodes = wantedList.map(c => c.toUpperCase());
+            const res = await fetch("http://localhost:8000/api/schedule/generate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ course_codes: courseCodes })
+            });
+            const data = await res.json();
+            if (data.courses) {
+                const colors = [
+                  "bg-[var(--color-nyu-violet)] border-[var(--color-nyu-violet-light)]",
+                  "bg-purple-900 border-purple-500",
+                  "bg-indigo-900 border-indigo-500",
+                  "bg-teal-900 border-teal-500",
+                  "bg-blue-900 border-blue-500"
+                ];
+                const mapped: SchedCourse[] = data.courses.map((c: any, i: number) => ({
+                    id: `gen_${i}`,
+                    slotKey: `slot_${i}`,
+                    code: c.code,
+                    section: c.section,
+                    title: c.title,
+                    credits: c.credits,
+                    timeSlot: c.timeSlot,
+                    color: colors[i % colors.length],
+                    isWanted: true
+                }));
+                setSchedule(mapped);
+                
+                const newCatalog: Record<string, SchedCourse[]> = {};
+                mapped.forEach(c => { newCatalog[c.slotKey] = [c]; });
+                setCatalog(newCatalog);
+            }
+        } catch (e) {
+            console.error("Failed to generate schedule:", e);
+        } finally {
+            setLoading(false);
+        }
+    };
+    fetchSchedule();
+  }, [wantedQuery]);
 
   // Filters State
   const [excludeMorning, setExcludeMorning] = useState(false);
@@ -226,6 +273,12 @@ function ResultsContent() {
       
       {/* Main Timetable Area */}
       <div className="flex-1 glass-panel rounded-2xl flex flex-col overflow-hidden relative">
+        {loading && (
+          <div className="absolute inset-0 z-50 bg-[var(--color-dark-bg)]/80 backdrop-blur-sm flex flex-col items-center justify-center">
+             <RefreshCw size={32} className="animate-spin text-[var(--color-nyu-violet-light)] mb-4" />
+             <p className="text-white font-bold tracking-wider">Generating optimal schedule...</p>
+          </div>
+        )}
         <div className="p-5 border-b border-[var(--color-glass-border)] bg-[var(--color-dark-card)]/50">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
             <div>
