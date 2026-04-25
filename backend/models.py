@@ -15,7 +15,7 @@ class UserInDB(BaseModel):
     email: EmailStr
     hashed_password: str
     completed_courses: List[str] = []
-    preferences: dict = {"target_credits": 16, "max_workload": 4.5}
+    preferences: dict = {"target_credits": 16}
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class UserResponse(BaseModel):
@@ -32,3 +32,11 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     email: Optional[str] = None
+
+class CourseQuery(BaseModel):
+    query: str
+    major: str
+    minor: Optional[str] = None
+    academic_year: str
+    graduation: str
+    target_credits: int

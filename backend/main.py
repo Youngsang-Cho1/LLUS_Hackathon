@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from typing import List
 
 from database import get_db
-from models import UserCreate, UserResponse, Token
+from models import UserCreate, UserResponse, Token, CourseQuery
 from auth import (
     get_password_hash, 
     verify_password, 
@@ -50,7 +50,7 @@ async def register_user(user: UserCreate, db=Depends(get_db)):
         "email": user.email,
         "hashed_password": hashed_pwd,
         "completed_courses": [],
-        "preferences": {"target_credits": 16, "max_workload": 4.5},
+        "preferences": {"target_credits": 16},
         "created_at": datetime.utcnow()
     }
     
@@ -123,6 +123,155 @@ async def upload_transcript(
         "message": f"Successfully extracted and saved {len(extracted_courses)} courses from {file.filename}.",
         "added_courses": extracted_courses
     }
+
+# --- SEMANTIC SEARCH MOCK ---
+MOCK_COURSE_CATALOG = [
+    {
+        "code": "CSCI-UA 480", "section": "-001", "title": "Special Topics: Artificial Intelligence", 
+        "description": "Introduction to AI, machine learning, and neural networks using Python. Covers deep learning basics.", 
+        "tags": ["ai", "machine learning", "python", "computer science", "artificial intelligence", "tech"],
+        "timeSlot": {"days": ["Mon", "Wed"], "startHour": 14, "duration": 1.5, "room": "Rm 101"},
+        "credits": 4
+    },
+    {
+        "code": "CSCI-UA 310", "section": "-004", "title": "Basic Algorithms", 
+        "description": "Introduction to the study of algorithms. Presents two main themes: designing appropriate data structures and analyzing the efficiency of the algorithms.", 
+        "tags": ["algorithm", "data structure", "logic", "programming", "code"],
+        "timeSlot": {"days": ["Tue", "Thu"], "startHour": 10, "duration": 1.5, "room": "Rm 301"},
+        "credits": 4
+    },
+    {
+        "code": "MATH-UA 120", "section": "-002", "title": "Discrete Mathematics", 
+        "description": "A first course in discrete mathematics. Sets, logic, relations, functions, combinations.", 
+        "tags": ["math", "logic", "discrete", "numbers", "proofs"],
+        "timeSlot": {"days": ["Mon", "Wed"], "startHour": 15.5, "duration": 1.5, "room": "Rm 204"},
+        "credits": 4
+    },
+    {
+        "code": "DS-UA 111", "section": "-005", "title": "Data Science for Everyone", 
+        "description": "Introduction to data science, python programming, data visualization, and statistical modeling.", 
+        "tags": ["data", "python", "statistics", "visualization", "analytics", "science"],
+        "timeSlot": {"days": ["Tue", "Thu"], "startHour": 14, "duration": 1.5, "room": "Aud A"},
+        "credits": 4
+    },
+    {
+        "code": "BS-UA 101", "section": "-003", "title": "Business and Finance", 
+        "description": "Introduction to corporate finance, markets, and business strategy. Learn how companies make money.", 
+        "tags": ["business", "finance", "strategy", "money", "markets", "corporate"],
+        "timeSlot": {"days": ["Fri"], "startHour": 9, "duration": 3.0, "room": "Aud B"},
+        "credits": 4
+    },
+    {
+        "code": "MKTG-UB 1", "section": "-001", "title": "Introduction to Marketing", 
+        "description": "Explore consumer behavior, digital marketing, advertising, and brand management strategies.", 
+        "tags": ["marketing", "business", "advertising", "digital", "brand", "consumers"],
+        "timeSlot": {"days": ["Mon", "Wed"], "startHour": 11, "duration": 1.5, "room": "Tisch Hall 200"},
+        "credits": 4
+    },
+    {
+        "code": "PSYCH-UA 1", "section": "-008", "title": "Introduction to Psychology", 
+        "description": "An overview of human behavior, cognitive psychology, neuroscience, and mental health.", 
+        "tags": ["psychology", "mind", "behavior", "brain", "neuroscience", "health"],
+        "timeSlot": {"days": ["Tue", "Thu"], "startHour": 15, "duration": 1.5, "room": "Meyer Hall 121"},
+        "credits": 4
+    },
+    {
+        "code": "ECON-UA 1", "section": "-012", "title": "Microeconomics", 
+        "description": "Study of individual economic behavior, supply and demand, market structures, and pricing strategies.", 
+        "tags": ["economics", "micro", "money", "supply", "demand", "market"],
+        "timeSlot": {"days": ["Mon", "Wed"], "startHour": 9.5, "duration": 1.5, "room": "Silver 401"},
+        "credits": 4
+    },
+    {
+        "code": "BIOL-UA 11", "section": "-002", "title": "Principles of Biology I", 
+        "description": "Introduction to cellular biology, genetics, molecular biology, and evolution.", 
+        "tags": ["biology", "science", "genetics", "cells", "evolution", "life"],
+        "timeSlot": {"days": ["Tue", "Thu"], "startHour": 8, "duration": 1.5, "room": "Silver 703"},
+        "credits": 4
+    },
+    {
+        "code": "ARTH-UA 10", "section": "-005", "title": "History of Western Art I", 
+        "description": "Survey of Western art from prehistoric times to the Renaissance. Examines architecture, sculpture, and painting.", 
+        "tags": ["art", "history", "culture", "painting", "sculpture", "renaissance"],
+        "timeSlot": {"days": ["Fri"], "startHour": 11, "duration": 3.0, "room": "Silver 300"},
+        "credits": 4
+    },
+    {
+        "code": "CSCI-UA 201", "section": "-005", "title": "Computer Systems Organization", 
+        "description": "Covers internal structure of computers, machine language programming, and system software.", 
+        "tags": ["systems", "c", "assembly", "hardware", "software", "organization"],
+        "timeSlot": {"days": ["Wed", "Fri"], "startHour": 14, "duration": 1.5, "room": "Aud A"},
+        "credits": 4
+    },
+    {
+        "code": "PHIL-UA 1", "section": "-004", "title": "Central Problems in Philosophy", 
+        "description": "An introduction to philosophy through the examination of classical and contemporary texts. Topics include free will, knowledge, and ethics.", 
+        "tags": ["philosophy", "ethics", "knowledge", "free will", "thinking", "logic"],
+        "timeSlot": {"days": ["Tue", "Thu"], "startHour": 16.5, "duration": 1.5, "room": "Silver 410"},
+        "credits": 4
+    }
+]
+
+@app.post("/api/courses/recommend")
+async def recommend_courses(
+    query: CourseQuery,
+    email: str = Depends(get_current_user_email),
+    db=Depends(get_db)
+):
+    """
+    Mock endpoint that simulates proxying the request to the Data Team's API.
+    """
+    # 1. Fetch user's transcript from DB
+    user = await db.users.find_one({"email": email})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    transcript = user.get("completed_courses", [])
+    
+    # 2. Build the exact payload for the Data Team
+    data_api_payload = {
+        "query": query.query,
+        "major": query.major,
+        "minor": query.minor,
+        "academic_year": query.academic_year,
+        "graduation": query.graduation,
+        "target_credits": query.target_credits,
+        "transcript": transcript
+    }
+    print(f"Sending payload to Data API: {data_api_payload}")
+    
+    # 3. (MOCK) Mocking the Data API's response
+    q = query.query.lower()
+    results = []
+    
+    for course in MOCK_COURSE_CATALOG:
+        score = 0.0
+        for tag in course["tags"]:
+            if tag in q:
+                score += 0.4
+        if course["title"].lower() in q or q in course["title"].lower():
+            score += 0.3
+        for word in q.split():
+            if len(word) > 3 and word in course["description"].lower():
+                score += 0.1
+                
+        import random
+        score += random.uniform(0.05, 0.20)
+        score = min(score, 0.99)
+        
+        if score > 0.15:
+            results.append({
+                "code": course["code"],
+                "section": course["section"],
+                "title": course["title"],
+                "description": course["description"],
+                "score": round(score, 2),
+                "timeSlot": course["timeSlot"],
+                "credits": course["credits"]
+            })
+            
+    results.sort(key=lambda x: x["score"], reverse=True)
+    return {"results": results[:3]}
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

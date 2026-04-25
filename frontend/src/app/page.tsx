@@ -133,9 +133,10 @@ function ScheduleGenerator() {
   const [minorSuggestions, setMinorSuggestions] = useState<string[]>([]);
   const [showMinorDrop, setShowMinorDrop] = useState(false);
 
-  const [wantedInput, setWantedInput] = useState("");
-  const [wantedCourses, setWantedCourses] = useState<string[]>([]);
-  const [courseSuggestions, setCourseSuggestions] = useState<typeof COURSE_DICTIONARY>([]);
+  const [courseDescription, setCourseDescription] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [recommendedCourses, setRecommendedCourses] = useState<any[]>([]);
+  const [wantedCourses, setWantedCourses] = useState<any[]>([]);
 
   useEffect(() => {
     if (majorInput.trim() === "") {
@@ -155,30 +156,44 @@ function ScheduleGenerator() {
     }
   }, [minorInput]);
 
-  useEffect(() => {
-    if (wantedInput.length > 1) {
-      const lower = wantedInput.toLowerCase();
-      const matches = COURSE_DICTIONARY.filter(c => 
-        c.code.toLowerCase().includes(lower) || 
-        c.title.toLowerCase().includes(lower) ||
-        c.tags.some(tag => tag.includes(lower))
-      );
-      setCourseSuggestions(matches);
-    } else {
-      setCourseSuggestions([]);
-    }
-  }, [wantedInput]);
+  const handleDiscoverCourses = async () => {
+    if (!courseDescription.trim()) return;
+    setIsSearching(true);
+    try {
+      const payload = {
+        query: courseDescription,
+        major: selectedMajor || majorInput,
+        minor: selectedMinor || minorInput || "",
+        academic_year: academicYear,
+        graduation: graduation,
+        target_credits: parseInt(targetCredits)
+      };
 
-  const addWantedCourse = (code: string) => {
-    if (wantedCourses.length < 2 && !wantedCourses.includes(code)) {
-      setWantedCourses([...wantedCourses, code]);
+      const res = await fetch("http://localhost:8000/api/courses/recommend", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      setRecommendedCourses(data.results || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSearching(false);
     }
-    setWantedInput("");
-    setCourseSuggestions([]);
+  };
+
+  const addWantedCourse = (course: any) => {
+    if (wantedCourses.length < 3 && !wantedCourses.find(c => c.code === course.code)) {
+      setWantedCourses([...wantedCourses, course]);
+    }
   };
 
   const removeWantedCourse = (code: string) => {
-    setWantedCourses(wantedCourses.filter(c => c !== code));
+    setWantedCourses(wantedCourses.filter(c => c.code !== code));
   };
 
   const handleGenerate = (e: FormEvent) => {
@@ -191,22 +206,22 @@ function ScheduleGenerator() {
       targetCredits,
     });
     if (wantedCourses.length > 0) {
-      params.append("wanted", wantedCourses.join(","));
+      params.append("wanted", wantedCourses.map(c => c.code).join(","));
     }
     router.push(`/results?${params.toString()}`);
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh] w-full animate-in fade-in duration-500">
+    <div className="flex flex-col items-center justify-center min-h-[80vh] w-full animate-in fade-in duration-500 mt-10">
       <div className="text-center mb-12">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-nyu-violet-dark)] text-[var(--color-nyu-violet-light)] text-sm font-semibold mb-6 border border-[var(--color-nyu-violet)]">
-          <Sparkles size={14} /> AI-Powered Schedule Generator
+          <Sparkles size={14} /> AI-Powered Semantic Search
         </div>
         <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
           Craft Your Perfect Semester
         </h1>
         <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-          Let our intelligent engine resolve prerequisites and time conflicts to instantly generate the ultimate class schedule tailored just for you.
+          Tell us what you want to learn, and our AI will recommend the best courses based on cosine similarity and fit them into a conflict-free schedule.
         </p>
       </div>
 
@@ -319,45 +334,73 @@ function ScheduleGenerator() {
             </div>
           </div>
 
+          {/* Semantic Search Section */}
           <div className="mb-10 bg-[var(--color-dark-bg)] border border-[var(--color-glass-border)] p-6 rounded-xl">
-            <label className="text-xs font-semibold text-[var(--color-nyu-violet-light)] tracking-wider uppercase mb-3 block">
-              Wanted Courses (Max 2)
+            <label className="text-xs font-semibold text-[var(--color-nyu-violet-light)] tracking-wider uppercase mb-3 block flex items-center gap-2">
+              <Sparkles size={14} /> Describe Your Interests
             </label>
-            <p className="text-xs text-gray-400 mb-4">Enter courses you absolutely must take. Try typing "cso" or "algo".</p>
+            <p className="text-sm text-gray-400 mb-4">
+              Not sure what to take? Just type what you want to learn (e.g., "I want to learn python, data analysis, and AI"). Our model will find the best matches.
+            </p>
             
-            <div className="relative">
-              <input 
-                type="text" 
-                value={wantedInput}
-                onChange={(e) => setWantedInput(e.target.value)}
-                disabled={wantedCourses.length >= 2}
-                placeholder={wantedCourses.length >= 2 ? "Maximum 2 courses added." : "e.g. CSCI-UA 201 or 'cso'"}
-                className="w-full bg-[var(--color-dark-card)] border border-[var(--color-glass-border)] rounded-lg px-4 py-3 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-nyu-violet)] disabled:opacity-50"
+            <div className="flex flex-col gap-3">
+              <textarea 
+                value={courseDescription}
+                onChange={(e) => setCourseDescription(e.target.value)}
+                rows={3}
+                placeholder="I want to learn about..."
+                className="w-full bg-[var(--color-dark-card)] border border-[var(--color-glass-border)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-nyu-violet)] resize-none"
               />
-              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-              
-              {courseSuggestions.length > 0 && (
-                <div className="absolute top-full left-0 w-full mt-2 bg-[var(--color-dark-card)] border border-[var(--color-glass-border)] rounded-lg shadow-xl z-50 overflow-hidden">
-                  {courseSuggestions.map(s => (
-                    <div 
-                      key={s.code} 
-                      onClick={() => addWantedCourse(s.code)}
-                      className="px-4 py-3 hover:bg-[var(--color-nyu-violet)]/20 cursor-pointer text-sm text-gray-300 flex justify-between items-center transition-colors"
-                    >
-                      <span><strong className="text-white">{s.code}</strong>: {s.title}</span>
-                      <span className="text-[10px] bg-gray-800 px-2 py-1 rounded text-gray-400">{s.tags[0]}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <button 
+                type="button"
+                onClick={handleDiscoverCourses}
+                disabled={isSearching || !courseDescription.trim()}
+                className="self-end bg-[var(--color-nyu-violet)] hover:bg-[var(--color-nyu-violet-light)] text-white px-6 py-2 rounded-lg text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isSearching ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Search size={16} />}
+                Discover Courses
+              </button>
             </div>
 
+            {/* Recommendations Results */}
+            {recommendedCourses.length > 0 && (
+              <div className="mt-6 pt-6 border-t border-[var(--color-glass-border)]">
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Recommended Matches</h3>
+                <div className="space-y-3">
+                  {recommendedCourses.map((course) => {
+                    const isAdded = wantedCourses.find(c => c.code === course.code);
+                    return (
+                      <div key={course.code} className="bg-[var(--color-dark-card)] border border-[var(--color-glass-border)] p-4 rounded-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-[var(--color-nyu-violet)] transition-colors">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-bold text-white">{course.code}</span>
+                            <span className="text-xs text-[var(--color-nyu-violet-light)] bg-[var(--color-nyu-violet)]/10 px-2 py-0.5 rounded-full border border-[var(--color-nyu-violet)]/30 font-bold">
+                              {(course.score * 100).toFixed(0)}% Match
+                            </span>
+                          </div>
+                          <p className="text-sm font-semibold text-gray-300 mb-1">{course.title}</p>
+                          <p className="text-xs text-gray-500 line-clamp-2">{course.description}</p>
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => isAdded ? removeWantedCourse(course.code) : addWantedCourse(course)}
+                          className={`shrink-0 px-4 py-2 rounded-lg text-sm font-bold transition-all ${isAdded ? 'bg-[var(--color-glass)] text-gray-400 hover:text-red-400 border border-[var(--color-glass-border)]' : 'bg-transparent border border-[var(--color-nyu-violet-light)] text-[var(--color-nyu-violet-light)] hover:bg-[var(--color-nyu-violet)]/20'}`}
+                        >
+                          {isAdded ? "Remove" : "Add to Schedule"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {wantedCourses.length > 0 && (
-              <div className="flex gap-3 mt-4">
+              <div className="flex flex-wrap gap-3 mt-6">
                 {wantedCourses.map(course => (
-                  <div key={course} className="flex items-center gap-2 bg-[var(--color-nyu-violet)]/20 border border-[var(--color-nyu-violet)] text-[var(--color-nyu-violet-light)] px-3 py-1.5 rounded-full text-sm font-medium">
-                    {course}
-                    <button type="button" onClick={() => removeWantedCourse(course)} className="hover:text-white transition-colors">
+                  <div key={course.code} className="flex items-center gap-2 bg-[var(--color-nyu-violet)]/20 border border-[var(--color-nyu-violet)] text-[var(--color-nyu-violet-light)] px-3 py-1.5 rounded-full text-sm font-medium">
+                    {course.code}
+                    <button type="button" onClick={() => removeWantedCourse(course.code)} className="hover:text-white transition-colors">
                       <X size={14} />
                     </button>
                   </div>
