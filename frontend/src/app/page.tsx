@@ -461,10 +461,10 @@ function ScheduleGenerator() {
           {/* Semantic Search Section */}
           <div className="mb-10 bg-[var(--color-dark-bg)] border border-[var(--color-glass-border)] p-6 rounded-xl">
             <label className="text-xs font-semibold text-[var(--color-nyu-violet-light)] tracking-wider uppercase mb-3 block flex items-center gap-2">
-              <Sparkles size={14} /> Describe Your Interests
+              <Sparkles size={14} /> Search by Course Name or Code
             </label>
             <p className="text-sm text-gray-400 mb-4">
-              Not sure what to take? Just type what you want to learn (e.g., "I want to learn python, data analysis, and finance"). Our model will find the best matches.
+              Looking for a specific course? Enter the course code (e.g., "CSCI-UA 201") or part of the course name (e.g., "Algorithms") to find exact matches.
             </p>
             
             <div className="flex flex-col gap-3">
@@ -472,7 +472,7 @@ function ScheduleGenerator() {
                 value={courseDescription}
                 onChange={(e) => setCourseDescription(e.target.value)}
                 rows={3}
-                placeholder="I want to learn about..."
+                placeholder="Enter course name or code... (e.g., CSCI-UA 101)"
                 className="w-full bg-[var(--color-dark-card)] border border-[var(--color-glass-border)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-nyu-violet)] resize-none"
               />
               <button 
