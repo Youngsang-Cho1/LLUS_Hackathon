@@ -162,23 +162,27 @@ function ScheduleGenerator() {
     try {
       const payload = {
         query: courseDescription,
-        major: selectedMajor || majorInput,
-        minor: selectedMinor || minorInput || "",
-        academic_year: academicYear,
-        graduation: graduation,
-        target_credits: parseInt(targetCredits)
+        k: 10
       };
 
-      const res = await fetch("http://localhost:8000/api/courses/recommend", {
+      const res = await fetch("http://localhost:8000/api/recommend", {
         method: "POST",
         headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify(payload)
       });
       const data = await res.json();
-      setRecommendedCourses(data.results || []);
+      
+      const mappedResults = (data.results || []).map((r: any) => ({
+        code: r.course_code,
+        title: r.title,
+        description: r.description,
+        score: r.score,
+        timeSlot: { days: ["TBA"], startHour: 10, duration: 1.5, room: "TBA" },
+        credits: 4
+      }));
+      setRecommendedCourses(mappedResults);
     } catch (e) {
       console.error(e);
     } finally {
