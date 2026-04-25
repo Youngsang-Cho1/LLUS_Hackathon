@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState, useMemo, useEffect } from "react";
-import { Calendar, Info, RefreshCw, Star, X, AlertTriangle, ArrowLeftRight, Settings2, Users } from "lucide-react";
+import { Calendar, Info, RefreshCw, Star, X, AlertTriangle, ArrowLeftRight, Settings2 } from "lucide-react";
 
 // --- MOCK DATA ---
 
@@ -17,135 +17,18 @@ interface SchedCourse {
   id: string;
   slotKey: string;
   code: string;
-  section: string; // Added section property (e.g. "-001")
+  section: string;
   title: string;
-  professor: string;
-  rating: number;
-  difficulty: number;
   credits: number;
   timeSlot: TimeSlot;
   color: string;
   isWanted?: boolean;
 }
 
-const DEFAULT_SCHEDULE: SchedCourse[] = [
-  {
-    id: "cs340_main",
-    slotKey: "cs340_slot",
-    code: "CSCI-UA 310",
-    section: "-001",
-    title: "Basic Algorithms",
-    professor: "Dr. A. Chen",
-    rating: 4.8,
-    difficulty: 4.5,
-    credits: 4,
-    timeSlot: { days: ["Mon", "Wed"], startHour: 10, duration: 1.5, room: "Rm 301" },
-    color: "bg-[var(--color-nyu-violet)] border-[var(--color-nyu-violet-light)]"
-  },
-  {
-    id: "bio210_main",
-    slotKey: "bio210_slot",
-    code: "BIO-UA 210",
-    section: "-003",
-    title: "Genetics",
-    professor: "Prof. B. Lee",
-    rating: 4.2,
-    difficulty: 3.8,
-    credits: 4,
-    timeSlot: { days: ["Tue", "Thu"], startHour: 13, duration: 1.5, room: "Lab 2" },
-    color: "bg-purple-900 border-purple-500"
-  },
-  {
-    id: "cso201_main",
-    slotKey: "cso201_slot",
-    code: "CSCI-UA 201",
-    section: "-005",
-    title: "Computer Systems Org",
-    professor: "Dr. D. Patel",
-    rating: 3.9,
-    difficulty: 4.9,
-    credits: 4,
-    timeSlot: { days: ["Wed", "Fri"], startHour: 14, duration: 1.5, room: "Aud A" },
-    color: "bg-gray-800 border-gray-500"
-  },
-  {
-    id: "math120_main",
-    slotKey: "math120_slot",
-    code: "MATH-UA 120",
-    section: "-002",
-    title: "Discrete Mathematics",
-    professor: "Dr. L. Torvalds",
-    rating: 4.9,
-    difficulty: 3.1,
-    credits: 4,
-    timeSlot: { days: ["Tue", "Thu"], startHour: 15.5, duration: 1.5, room: "Rm 204" },
-    color: "bg-indigo-900 border-indigo-500"
-  }
-];
 
-const MASTER_ALTERNATIVES: Record<string, SchedCourse[]> = {
-  "cso201_slot": [
-    {
-      id: "cso201_alt1",
-      slotKey: "cso201_slot",
-      code: "CSCI-UA 201",
-      section: "-006",
-      title: "Computer Systems Org",
-      professor: "Dr. L. Wong",
-      rating: 4.9,
-      difficulty: 4.2,
-      credits: 4,
-      timeSlot: { days: ["Tue", "Thu"], startHour: 10, duration: 1.5, room: "Rm 404" },
-      color: "bg-[var(--color-nyu-violet)] border-[var(--color-nyu-violet-light)]"
-    },
-    {
-      id: "cso201_alt2",
-      slotKey: "cso201_slot",
-      code: "CSCI-UA 201",
-      section: "-008",
-      title: "Computer Systems Org",
-      professor: "Prof. R. Garcia",
-      rating: 4.5,
-      difficulty: 3.5,
-      credits: 4,
-      timeSlot: { days: ["Tue", "Thu"], startHour: 17.5, duration: 1.5, room: "Rm 215" },
-      color: "bg-[var(--color-nyu-violet)] border-[var(--color-nyu-violet-light)]"
-    }
-  ],
-  "bio210_slot": [
-    {
-      id: "chem125_alt1",
-      slotKey: "bio210_slot",
-      code: "CHEM-UA 125",
-      section: "-001",
-      title: "General Chemistry",
-      professor: "Dr. J. Smith",
-      rating: 4.5,
-      difficulty: 2.5,
-      credits: 4,
-      timeSlot: { days: ["Mon", "Wed"], startHour: 14.5, duration: 1.5, room: "Aud B" },
-      color: "bg-teal-900 border-teal-500"
-    }
-  ],
-  "cs340_slot": [
-    {
-      id: "cs340_alt1",
-      slotKey: "cs340_slot",
-      code: "CSCI-UA 310",
-      section: "-004",
-      title: "Basic Algorithms",
-      professor: "Dr. K. Williams",
-      rating: 4.1,
-      difficulty: 4.8,
-      credits: 4,
-      timeSlot: { days: ["Tue", "Thu"], startHour: 14, duration: 1.5, room: "Rm 301" },
-      color: "bg-[var(--color-nyu-violet)] border-[var(--color-nyu-violet-light)]"
-    }
-  ]
-};
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
-const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22];
 
 // --- LOGIC ---
 
@@ -164,40 +47,115 @@ function checkTimeConflict(altCourse: SchedCourse, currentSchedule: SchedCourse[
   return false;
 }
 
+function formatTime(hourObj: number) {
+  if (!hourObj || isNaN(hourObj)) return "TBA";
+  const h = Math.floor(hourObj);
+  const m = Math.round((hourObj - h) * 60);
+  
+  let displayH = h;
+  let ampm = "AM";
+  if (h >= 12) {
+    ampm = "PM";
+    if (h > 12) displayH = h - 12;
+  }
+  if (displayH === 0) displayH = 12;
+  
+  const displayM = m.toString().padStart(2, "0");
+  return `${displayH}:${displayM} ${ampm}`;
+}
+
 // --- COMPONENT ---
 
 function ResultsContent() {
   const searchParams = useSearchParams();
   const credits = searchParams.get("targetCredits") || "16";
   const wantedQuery = searchParams.get("wanted") || "";
-  const wantedList = wantedQuery.toLowerCase().split(",").map(s => s.trim());
+  const wantedList = wantedQuery.toLowerCase().split(",").map(s => s.trim()).filter(s => s.length > 0);
 
-  const [catalog] = useState<Record<string, SchedCourse[]>>(() => {
-    const combined: Record<string, SchedCourse[]> = {};
-    DEFAULT_SCHEDULE.forEach(course => {
-      combined[course.slotKey] = [course, ...(MASTER_ALTERNATIVES[course.slotKey] || [])];
-    });
-    return combined;
-  });
+  const [catalog, setCatalog] = useState<Record<string, SchedCourse[]>>({});
 
-  const initialSchedule = useMemo(() => {
-    return DEFAULT_SCHEDULE.map(course => ({
-      ...course,
-      isWanted: wantedList.includes(course.code.toLowerCase())
-    }));
-  }, [wantedList]);
-
-  const [schedule, setSchedule] = useState<SchedCourse[]>(initialSchedule);
+  const [schedule, setSchedule] = useState<SchedCourse[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (wantedList.length === 0) {
+        setSchedule([]);
+        setLoading(false);
+        return;
+    }
+    
+    const fetchSchedule = async () => {
+        try {
+            const courseCodes = wantedList.map(c => c.toUpperCase());
+            const res = await fetch("http://localhost:8000/api/schedule/generate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ course_codes: courseCodes })
+            });
+            const data = await res.json();
+            if (data.courses) {
+                const colors = [
+                  "bg-[var(--color-nyu-violet)] border-[var(--color-nyu-violet-light)]",
+                  "bg-purple-900 border-purple-500",
+                  "bg-indigo-900 border-indigo-500",
+                  "bg-teal-900 border-teal-500",
+                  "bg-blue-900 border-blue-500"
+                ];
+
+                const groupedByCode: Record<string, any[]> = {};
+                data.courses.forEach((c: any) => {
+                    if (!groupedByCode[c.code]) groupedByCode[c.code] = [];
+                    groupedByCode[c.code].push(c);
+                });
+                
+                const initialSchedule: SchedCourse[] = [];
+                const newCatalog: Record<string, SchedCourse[]> = {};
+                
+                let courseIdx = 0;
+                for (const code in groupedByCode) {
+                    const sections = groupedByCode[code];
+                    const color = colors[courseIdx % colors.length];
+                    const slotKey = `slot_${code.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                    
+                    const mappedSections: SchedCourse[] = sections.map((c: any, secIdx: number) => ({
+                        id: `gen_${courseIdx}_${secIdx}`,
+                        slotKey: slotKey,
+                        code: c.code,
+                        section: c.section,
+                        title: c.title,
+                        credits: c.credits,
+                        timeSlot: c.timeSlot,
+                        color: color,
+                        isWanted: true
+                    }));
+                    
+                    if (mappedSections.length > 0) {
+                        initialSchedule.push(mappedSections[0]);
+                    }
+                    newCatalog[slotKey] = mappedSections;
+                    courseIdx++;
+                }
+                
+                setSchedule(initialSchedule);
+                setCatalog(newCatalog);
+            }
+        } catch (e) {
+            console.error("Failed to generate schedule:", e);
+        } finally {
+            setLoading(false);
+        }
+    };
+    fetchSchedule();
+  }, [wantedQuery]);
 
   // Filters State
   const [excludeMorning, setExcludeMorning] = useState(false);
   const [excludeEvening, setExcludeEvening] = useState(false);
-  const [targetWorkload, setTargetWorkload] = useState("any");
 
-  // Auto-Optimization Logic
+  // Auto-Optimization Logic (Time only now)
   useEffect(() => {
-    if (!excludeMorning && !excludeEvening && targetWorkload === "any") return;
+    if (!excludeMorning && !excludeEvening) return;
 
     setSchedule(currentSchedule => {
       let newSchedule = [...currentSchedule];
@@ -211,42 +169,19 @@ function ResultsContent() {
         if (excludeMorning && isMorning) needsSwap = true;
         if (excludeEvening && isEvening) needsSwap = true;
 
-        const options = catalog[course.slotKey] || [];
-        
-        // Find all valid options that don't violate rules
-        let validOptions = options.filter(alt => {
-           if (excludeMorning && alt.timeSlot.startHour < 11) return false;
-           if (excludeEvening && alt.timeSlot.startHour >= 17) return false;
-           return !checkTimeConflict(alt, newSchedule, course.id);
-        });
+        if (needsSwap) {
+          const options = catalog[course.slotKey] || [];
+          let validOptions = options.filter(alt => {
+             if (excludeMorning && alt.timeSlot.startHour < 11) return false;
+             if (excludeEvening && alt.timeSlot.startHour >= 17) return false;
+             return !checkTimeConflict(alt, newSchedule, course.id);
+          });
 
-        // Optimize or Swap
-        if (targetWorkload !== "any" || needsSwap) {
           if (validOptions.length > 0) {
-            if (targetWorkload === "min") {
-              validOptions.sort((a, b) => a.difficulty - b.difficulty);
-            } else if (targetWorkload === "max") {
-              validOptions.sort((a, b) => b.difficulty - a.difficulty);
-            }
-
             const bestOption = validOptions[0];
-            
-            if (needsSwap) {
-              if (bestOption.id !== course.id) {
-                changed = true;
-                return { ...bestOption, isWanted: course.isWanted };
-              }
-            } else if (targetWorkload !== "any") {
-              if (bestOption.id !== course.id) {
-                if (targetWorkload === "min" && bestOption.difficulty < course.difficulty) {
-                  changed = true;
-                  return { ...bestOption, isWanted: course.isWanted };
-                }
-                if (targetWorkload === "max" && bestOption.difficulty > course.difficulty) {
-                  changed = true;
-                  return { ...bestOption, isWanted: course.isWanted };
-                }
-              }
+            if (bestOption.id !== course.id) {
+              changed = true;
+              return { ...bestOption, isWanted: course.isWanted };
             }
           }
         }
@@ -255,14 +190,10 @@ function ResultsContent() {
 
       return changed ? newSchedule : currentSchedule;
     });
-  }, [excludeMorning, excludeEvening, targetWorkload, catalog]);
+  }, [excludeMorning, excludeEvening, catalog]);
 
   // Metrics
   const totalCredits = schedule.reduce((sum, c) => sum + c.credits, 0);
-  const avgWorkload = (schedule.reduce((sum, c) => sum + c.difficulty, 0) / schedule.length).toFixed(1);
-  let workloadLabel = "Moderate";
-  if (parseFloat(avgWorkload) > 4.2) workloadLabel = "Heavy";
-  if (parseFloat(avgWorkload) < 3.0) workloadLabel = "Light";
 
   const selectedCourse = schedule.find(c => c.id === selectedCourseId);
   const rawAlternatives = selectedCourse 
@@ -281,6 +212,12 @@ function ResultsContent() {
       
       {/* Main Timetable Area */}
       <div className="flex-1 glass-panel rounded-2xl flex flex-col overflow-hidden relative">
+        {loading && (
+          <div className="absolute inset-0 z-50 bg-[var(--color-dark-bg)]/80 backdrop-blur-sm flex flex-col items-center justify-center">
+             <RefreshCw size={32} className="animate-spin text-[var(--color-nyu-violet-light)] mb-4" />
+             <p className="text-white font-bold tracking-wider">Generating optimal schedule...</p>
+          </div>
+        )}
         <div className="p-5 border-b border-[var(--color-glass-border)] bg-[var(--color-dark-card)]/50">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
             <div>
@@ -291,18 +228,10 @@ function ResultsContent() {
               <p className="text-sm text-gray-400 mt-1">Total: {totalCredits} Credits (Target: {credits})</p>
             </div>
             
-            {/* Real-time Workload Metric */}
             <div className="bg-[var(--color-dark-bg)] border border-[var(--color-glass-border)] rounded-lg px-4 py-2 flex flex-col items-end">
-              <span className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Avg Workload</span>
+              <span className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Status</span>
               <div className="flex items-center gap-2">
-                <span className="text-lg font-bold text-white">{avgWorkload} <span className="text-sm font-normal text-gray-400">/ 5.0</span></span>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-bold
-                  ${workloadLabel === 'Heavy' ? 'bg-red-500/20 text-red-400' : 
-                    workloadLabel === 'Light' ? 'bg-green-500/20 text-green-400' : 
-                    'bg-yellow-500/20 text-yellow-400'}
-                `}>
-                  {workloadLabel}
-                </span>
+                <span className="text-sm font-bold text-green-400">Conflict-Free</span>
               </div>
             </div>
           </div>
@@ -310,7 +239,7 @@ function ResultsContent() {
           {/* Auto-Optimization Filter Bar */}
           <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-[var(--color-glass-border)]/50">
             <Settings2 size={16} className="text-gray-400" />
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider mr-2">Auto-Optimize:</span>
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider mr-2">Time Preferences:</span>
             
             <label className="flex items-center gap-2 text-sm text-gray-300 bg-[var(--color-dark-bg)] border border-[var(--color-glass-border)] px-3 py-1.5 rounded-full cursor-pointer hover:bg-[var(--color-nyu-violet)]/10 transition-colors">
               <input 
@@ -331,21 +260,10 @@ function ResultsContent() {
               />
               No Evenings (&gt; 5 PM)
             </label>
-
-            {/* Target Workload Dropdown */}
-            <select 
-              value={targetWorkload}
-              onChange={(e) => setTargetWorkload(e.target.value)}
-              className="bg-[var(--color-dark-bg)] border border-[var(--color-glass-border)] rounded-full px-4 py-1.5 text-sm text-gray-300 focus:outline-none focus:ring-2 focus:ring-[var(--color-nyu-violet)] appearance-none cursor-pointer"
-            >
-              <option value="any">Target Workload: Any</option>
-              <option value="min">Minimize Workload</option>
-              <option value="max">Maximize Workload</option>
-            </select>
             
             {wantedList[0] !== "" && (
               <div className="ml-auto text-xs text-[var(--color-nyu-violet-light)] border border-[var(--color-nyu-violet)] bg-[var(--color-nyu-violet)]/10 px-3 py-1.5 rounded-full flex items-center gap-1">
-                <Star size={12} fill="currentColor" /> Wanted Included
+                <Star size={12} fill="currentColor" /> Includes Interests
               </div>
             )}
           </div>
@@ -373,8 +291,8 @@ function ResultsContent() {
               {schedule.map(course => {
                 return course.timeSlot.days.map((day, idx) => {
                   const dayIndex = DAYS.indexOf(day);
-                  const startPercent = ((course.timeSlot.startHour - 8) / (18 - 8)) * 100;
-                  const heightPercent = (course.timeSlot.duration / (18 - 8)) * 100;
+                  const startPercent = ((course.timeSlot.startHour - 8) / (22 - 8)) * 100;
+                  const heightPercent = (course.timeSlot.duration / (22 - 8)) * 100;
                   const isSelected = selectedCourseId === course.id;
                   const hasConflict = checkTimeConflict(course, schedule, course.id);
 
@@ -436,22 +354,18 @@ function ResultsContent() {
               </button>
               <div className="flex items-center gap-2 mb-1">
                 <p className="text-xs text-[var(--color-nyu-violet-light)] font-bold tracking-wider uppercase">Selected</p>
-                {selectedCourse.isWanted && <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded uppercase font-bold tracking-wider">Wanted</span>}
+                {selectedCourse.isWanted && <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded uppercase font-bold tracking-wider">Matched Interest</span>}
               </div>
               <h2 className="text-xl font-bold text-white leading-tight">
                 {selectedCourse.code} <span className="text-sm font-normal text-gray-400">Sec {selectedCourse.section}</span>
               </h2>
               <p className="text-sm text-gray-300 truncate">{selectedCourse.title}</p>
-              <div className="mt-3 flex items-center gap-4 text-sm text-gray-300">
-                <span className="flex items-center gap-1"><Star size={14} className="text-yellow-400" /> {selectedCourse.rating}</span>
-                <span className="flex items-center gap-1"><Info size={14} /> W: {selectedCourse.difficulty}</span>
-              </div>
             </div>
 
             <div className="p-5 flex-1 overflow-y-auto">
               <h3 className="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
                 <RefreshCw size={14} /> 
-                {selectedCourse.isWanted ? "Alternative Times/Professors" : "Alternative Fulfilling Courses"}
+                {selectedCourse.isWanted ? "Alternative Times" : "Alternative Fulfilling Courses"}
               </h3>
 
               {rawAlternatives.length > 0 ? (
@@ -467,19 +381,10 @@ function ResultsContent() {
                         `}
                       >
                         <div className="flex justify-between items-start mb-2">
-                          <span className="text-xs text-gray-400 font-medium">{alt.code} <span className="text-gray-500">Sec {alt.section}</span></span>
-                          <div className="flex items-center gap-3">
-                            <span className="flex items-center gap-1 text-[var(--color-nyu-violet-light)] text-xs font-bold">
-                              <Star size={10} fill="currentColor" /> {alt.rating}
-                            </span>
-                            <span className="text-gray-400 text-xs font-bold">
-                              W: {alt.difficulty}
-                            </span>
-                          </div>
+                          <span className="text-sm text-white font-bold">{alt.code} <span className="text-gray-500 text-xs font-normal">Sec {alt.section}</span></span>
                         </div>
-                        <p className="text-sm font-bold text-white mb-1">{alt.professor}</p>
                         <p className={`text-xs mb-4 ${isConflict ? 'text-red-400 font-medium flex items-center gap-1' : 'text-gray-400'}`}>
-                          {alt.timeSlot.days.join("/")} • {alt.timeSlot.startHour > 12 ? alt.timeSlot.startHour - 12 + " PM" : alt.timeSlot.startHour + " AM"} • {alt.timeSlot.room}
+                          {alt.timeSlot.days.join("/")} • {formatTime(alt.timeSlot.startHour)} • {alt.timeSlot.room}
                           {isConflict && <><AlertTriangle size={12} /> Conflict</>}
                         </p>
                         

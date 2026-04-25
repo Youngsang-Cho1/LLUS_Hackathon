@@ -123,7 +123,7 @@ export default function DashboardPage() {
               <Settings className="text-[var(--color-nyu-violet-light)]" size={24} />
             </div>
             <h3 className="text-lg font-bold text-white mb-2">Preferences</h3>
-            <p className="text-sm text-gray-400">Update your workload limits, default campuses, and more.</p>
+            <p className="text-sm text-gray-400">Update your scheduling preferences, default campuses, and time blocks.</p>
           </div>
         </div>
       </div>
