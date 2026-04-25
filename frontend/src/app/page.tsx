@@ -226,7 +226,7 @@ function LandingPage() {
 // --- 2. SCHEDULE GENERATOR COMPONENT (Authenticated) ---
 function ScheduleGenerator() {
   const router = useRouter();
-  const [academicYear, setAcademicYear] = useState("Fall 2024");
+  const [academicYear, setAcademicYear] = useState("Fall 2026");
   const [graduation, setGraduation] = useState("Spring 2026");
   const [targetCredits, setTargetCredits] = useState("16");
 
@@ -413,14 +413,11 @@ function ScheduleGenerator() {
               <div className="relative">
                 <select 
                   value={academicYear}
-                  onChange={(e) => setAcademicYear(e.target.value)}
-                  className="w-full bg-[var(--color-dark-card)] border border-[var(--color-glass-border)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-nyu-violet)] appearance-none cursor-pointer"
+                  disabled
+                  className="w-full bg-[var(--color-dark-card)] border border-[var(--color-glass-border)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-nyu-violet)] appearance-none cursor-not-allowed opacity-70"
                 >
-                  <option value="Fall 2024">Fall 2024</option>
-                  <option value="Spring 2025">Spring 2025</option>
-                  <option value="Fall 2025">Fall 2025</option>
+                  <option value="Fall 2026">Fall 2026</option>
                 </select>
-                <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               </div>
             </div>
 
