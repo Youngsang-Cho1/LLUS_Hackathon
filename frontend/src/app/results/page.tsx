@@ -47,6 +47,23 @@ function checkTimeConflict(altCourse: SchedCourse, currentSchedule: SchedCourse[
   return false;
 }
 
+function formatTime(hourObj: number) {
+  if (!hourObj || isNaN(hourObj)) return "TBA";
+  const h = Math.floor(hourObj);
+  const m = Math.round((hourObj - h) * 60);
+  
+  let displayH = h;
+  let ampm = "AM";
+  if (h >= 12) {
+    ampm = "PM";
+    if (h > 12) displayH = h - 12;
+  }
+  if (displayH === 0) displayH = 12;
+  
+  const displayM = m.toString().padStart(2, "0");
+  return `${displayH}:${displayM} ${ampm}`;
+}
+
 // --- COMPONENT ---
 
 function ResultsContent() {
@@ -367,7 +384,7 @@ function ResultsContent() {
                           <span className="text-sm text-white font-bold">{alt.code} <span className="text-gray-500 text-xs font-normal">Sec {alt.section}</span></span>
                         </div>
                         <p className={`text-xs mb-4 ${isConflict ? 'text-red-400 font-medium flex items-center gap-1' : 'text-gray-400'}`}>
-                          {alt.timeSlot.days.join("/")} • {alt.timeSlot.startHour > 12 ? alt.timeSlot.startHour - 12 + " PM" : alt.timeSlot.startHour + " AM"} • {alt.timeSlot.room}
+                          {alt.timeSlot.days.join("/")} • {formatTime(alt.timeSlot.startHour)} • {alt.timeSlot.room}
                           {isConflict && <><AlertTriangle size={12} /> Conflict</>}
                         </p>
                         
