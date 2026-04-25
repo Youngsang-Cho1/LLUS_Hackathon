@@ -6,6 +6,13 @@ from datetime import datetime, timedelta, timezone
 from typing import List
 from contextlib import asynccontextmanager
 import os
+import sys
+from fastapi.responses import JSONResponse
+sys.path.append("/scraper")
+try:
+    from parse_transcript import parse_transcript
+except ImportError:
+    parse_transcript = None
 import csv
 
 from database import get_db
@@ -137,25 +144,45 @@ async def upload_transcript(
     email: str = Depends(get_current_user_email),
     db=Depends(get_db)
 ):
-    """
-    Dummy endpoint that simulates an AI extraction from a PDF/Image transcript.
-    In reality, we would pass 'file' to an OCR/Vision AI tool.
-    For now, it updates the user's completed courses with mock data.
-    """
-    # Mock AI Extraction
-    extracted_courses = ["CSCI-UA 101", "CSCI-UA 201", "MATH-UA 120", "CORE-UA 101"]
+    import tempfile
+    from pathlib import Path
     
-    # Update DB
-    await db.users.update_one(
-        {"email": email},
-        {"$addToSet": {"completed_courses": {"$each": extracted_courses}}}
-    )
+    if not parse_transcript:
+        return JSONResponse(status_code=500, content={"message": "OCR script not found or failed to load."})
+
+    extracted_courses = []
     
-    return {
-        "status": "success", 
-        "message": f"Successfully extracted and saved {len(extracted_courses)} courses from {file.filename}.",
-        "added_courses": extracted_courses
-    }
+    # Save uploaded file temporarily
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        tmp.write(await file.read())
+        tmp_path = Path(tmp.name)
+        
+    try:
+        # Run OCR
+        parsed_data = parse_transcript(tmp_path)
+        
+        # Extract course codes
+        for c in parsed_data.completed_courses:
+            extracted_courses.append(c.code)
+            
+        # Update DB
+        if extracted_courses:
+            await db.users.update_one(
+                {"email": email},
+                {"$addToSet": {"completed_courses": {"$each": extracted_courses}}}
+            )
+            
+        return {
+            "status": "success", 
+            "message": f"Successfully extracted and saved {len(extracted_courses)} courses from {file.filename}.",
+            "added_courses": extracted_courses
+        }
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": f"Error parsing transcript: {str(e)}"})
+    finally:
+        # Cleanup
+        if tmp_path.exists():
+            tmp_path.unlink()
 
 # --- SEMANTIC SEARCH MOCK ---
 MOCK_COURSE_CATALOG = [
